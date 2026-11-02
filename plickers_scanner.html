@@ -56,6 +56,7 @@ function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.n
 function draw(f,col,txt){cx.strokeStyle=col;cx.lineWidth=3;cx.beginPath();f.q.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
  cx.fillStyle=col;cx.font='bold 22px sans-serif';cx.fillText(txt,f.q[0][0],f.q[0][1]-6);}
 let lastOut={};const $=id=>document.getElementById(id);
+{const P=new URLSearchParams(location.search);if(P.get('u')){localStorage.setItem('url',P.get('u'));localStorage.setItem('cls',P.get('c')||'');history.replaceState(null,'',location.pathname);}}
 for(const k of['url','cls'])$(k).value=localStorage.getItem(k)||'';
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  localStorage.setItem('url',url);localStorage.setItem('cls',$('cls').value);

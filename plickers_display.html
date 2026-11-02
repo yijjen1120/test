@@ -8,9 +8,11 @@
 .t.on{background:#238636;color:#fff}.t small{font-size:.5em}
 #cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}</style></head><body>
 <div id="bar"><h1 id="h">等待連線…</h1>
-<label><input type="checkbox" id="sa"> 顯示答案</label><button id="gear">設定</button>
+<label><input type="checkbox" id="sa"> 顯示答案</label><button id="gear">設定</button><button id="ph">手機連結</button>
 <div id="set"><input id="url" placeholder="Apps Script 網址" size="30"><input id="cls" placeholder="班級" size="6"></div></div>
+<div id="lk" style="display:none;padding:12px 16px;background:#161b22;gap:16px;align-items:center"><div id="qr" style="background:#fff;padding:8px"></div><div style="flex:1;word-break:break-all;font-size:13px">用手機掃這個 QR code（或開下面連結）即可，手機會自動記住設定：<br><br><span id="lt"></span></div></div>
 <div id="cnt"></div><div id="g"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
 $('url').value=url;$('cls').value=cls;
@@ -23,5 +25,8 @@ async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+enc
  $('h').textContent=`第 ${d.qno||'-'} 題　已掃到 ${n} / ${N}`;
  $('cnt').style.display=show?'flex':'none';$('cnt').textContent=Object.entries(c).map(([k,v])=>`${k}：${v}`).join('　　');}
  catch(e){$('h').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
+$('ph').onclick=()=>{url=$('url').value.trim();cls=$('cls').value;if(!url||!cls){alert('請先在設定填入網址與班級');return;}
+ const L=new URL('plickers_scanner.html',location.href);L.search='u='+encodeURIComponent(url)+'&c='+encodeURIComponent(cls);
+ $('lk').style.display='flex';$('lt').textContent=L.href;$('qr').innerHTML='';try{new QRCode($('qr'),{text:L.href,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});}catch(e){}};
 poll();
 </script></body></html>
