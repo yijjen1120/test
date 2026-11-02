@@ -1,0 +1,27 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plickers 教室顯示</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#0d1117;color:#eee}
+#bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 16px;background:#161b22}
+#bar input{font-size:15px;padding:4px}#set{display:flex;gap:8px;flex-wrap:wrap}h1{margin:0;font-size:28px;flex:1}
+#g{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:16px}
+.t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(24px,4.5vw,64px);font-weight:700;transition:.3s}
+.t.on{background:#238636;color:#fff}.t small{font-size:.5em}
+#cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}</style></head><body>
+<div id="bar"><h1 id="h">等待連線…</h1>
+<label><input type="checkbox" id="sa"> 顯示答案</label><button id="gear">設定</button>
+<div id="set"><input id="url" placeholder="Apps Script 網址" size="30"><input id="cls" placeholder="班級" size="6"></div></div>
+<div id="cnt"></div><div id="g"></div>
+<script>
+const N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
+$('url').value=url;$('cls').value=cls;
+$('gear').onclick=()=>{$('set').style.display=$('set').style.display=='none'?'flex':'none';};
+if(url&&cls)$('set').style.display='none';
+$('url').onchange=$('cls').onchange=()=>{url=$('url').value.trim();cls=$('cls').value;localStorage.setItem('url',url);localStorage.setItem('cls',cls);};
+$('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
+async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+encodeURIComponent(cls))).json(),r=d.results||{},show=$('sa').checked,c={A:0,B:0,C:0,D:0};let n=0;
+ for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];el.classList.toggle('on',!!a);el.innerHTML=a&&show?`${i}<small>${a}</small>`:i;if(a){n++;c[a]++;}}
+ $('h').textContent=`第 ${d.qno||'-'} 題　已掃到 ${n} / ${N}`;
+ $('cnt').style.display=show?'flex':'none';$('cnt').textContent=Object.entries(c).map(([k,v])=>`${k}：${v}`).join('　　');}
+ catch(e){$('h').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
+poll();
+</script></body></html>

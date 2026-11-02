@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plickers 掃描器 (階段1)</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
+canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
+.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}</style></head><body>
+<div id="w"><div><canvas id="c"></canvas></div><div id="p">
+<button id="go">開啟鏡頭</button><button id="rs">清除</button>
+<div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><input id="cls" placeholder="班級" size="6"> 第<input id="q" type="number" value="1" style="width:52px">題 正解<select id="ans"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+<button id="send" style="margin-top:8px">送出本題</button><span id="st"></span>
+<div class="b"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
+<p id="t">已辨識：0 張</p><div id="l"></div></div></div>
+<script>
+const DB={"1":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"2":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"3":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"4":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"5":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"6":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"7":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"8":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"9":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"10":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"11":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"12":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"13":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"14":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"15":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"16":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"17":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"18":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"19":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"20":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"21":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"22":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"23":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"24":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]],"25":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"26":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"27":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"28":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"29":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"30":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"31":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"32":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"33":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"34":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"35":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"36":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"37":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"38":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"39":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"40":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]]};
+// 160 種版本：key = 畫面上「向上那一邊」的 5x5 圖型；r = 順時鐘轉 r 次，朝上的字母 = TOP[r]
+const TOP=['B','A','D','C'],MAP={};
+for(const id in DB){let g=DB[id];for(let r=0;r<4;r++){MAP[g.map(x=>x.join('')).join('')]=[+id,r];g=g[0].map((_,c)=>g.map(row=>row[c]).reverse());}}
+const cv=document.getElementById('c'),cx=cv.getContext('2d',{willReadFrequently:true}),vid=document.createElement('video');
+let W,H,hist={},got={},run=false;
+document.getElementById('go').onclick=async()=>{
+ const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+ vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;loop();};
+document.getElementById('rs').onclick=()=>{hist={};got={};};
+function otsu(g){const h=new Array(256).fill(0);for(let i=0;i<g.length;i+=3)h[g[i]]++;let n=0,s=0;for(let i=0;i<256;i++){n+=h[i];s+=i*h[i];}
+ let wb=0,sb=0,best=0,t=100;for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=i*h[i];const d=sb/wb-(s-sb)/wf,v=wb*wf*d*d;if(v>best){best=v;t=i;}}return t;}
+function hull(p){p.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
+ for(const q of p){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q);}
+ for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q);}lo.pop();up.pop();return lo.concat(up);}
+const area=P=>{let s=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];s+=a[0]*b[1]-b[0]*a[1];}return s/2;};
+function quad(h){h=h.slice();while(h.length>4){let bi=0,bv=1e18;for(let i=0;i<h.length;i++){const a=h[(i+h.length-1)%h.length],b=h[i],c=h[(i+1)%h.length];
+ const v=Math.abs((b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]));if(v<bv){bv=v;bi=i;}}h.splice(bi,1);}return h;}
+function detect(){
+ const im=cx.getImageData(0,0,W,H).data,g=new Uint8Array(W*H);for(let i=0;i<W*H;i++)g[i]=(im[4*i]*77+im[4*i+1]*150+im[4*i+2]*29)>>8;
+ const t=otsu(g)*0.9,lab=new Int32Array(W*H),res=[];let L=0;
+ for(let s=0;s<W*H;s++){if(g[s]>=t||lab[s])continue;L++;const st=[s],pts=[];lab[s]=L;let n=0;
+  while(st.length){const i=st.pop();n++;const x=i%W,y=(i/W)|0;let edge=false;
+   for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1]){if(j<0||g[j]>=t){edge=true;continue;}if(!lab[j]){lab[j]=L;st.push(j);}}
+   if(edge)pts.push([x,y]);}
+  if(n<500||n>W*H/4||pts.length<12)continue;
+  let q=quad(hull(pts));if(q.length<4)continue;if(area(q)<0)q.reverse();const A=area(q);if(n/A<0.5||n/A>1.1)continue;
+  // 讓第一條邊是畫面上「最上面」的邊 (TL→TR)
+  let bi=0,by=1e9;for(let i=0;i<4;i++){const m=(q[i][1]+q[(i+1)%4][1])/2;if(m<by){by=m;bi=i;}}q=[0,1,2,3].map(i=>q[(bi+i)%4]);
+  const v=[];for(let r=0;r<5;r++)for(let c=0;c<5;c++){let sum=0;for(const du of[-.05,0,.05])for(const dv of[-.05,0,.05]){
+   const u=(c+.5)/5+du,w=(r+.5)/5+dv,top=[q[0][0]+(q[1][0]-q[0][0])*u,q[0][1]+(q[1][1]-q[0][1])*u],bot=[q[3][0]+(q[2][0]-q[3][0])*u,q[3][1]+(q[2][1]-q[3][1])*u];
+   const x=Math.round(top[0]+(bot[0]-top[0])*w),y=Math.round(top[1]+(bot[1]-top[1])*w);sum+=g[Math.min(H-1,Math.max(0,y))*W+Math.min(W-1,Math.max(0,x))];}v.push(sum/9);}
+  const mn=Math.min(...v),mx=Math.max(...v);if(mx-mn<50)continue;const mid=(mn+mx)/2,key=v.map(a=>a<mid?1:0).join('');
+  const m=MAP[key];res.push({q,id:m?m[0]:null,ans:m?TOP[m[1]]:null});}
+ return res;}
+function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.now(),found=detect();
+ for(const f of found){if(f.id==null){draw(f,'#f55','?');continue;}(hist[f.id]=hist[f.id]||[]).push([now,f.ans]);}
+ const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
+  const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
+ for(const f of found)if(f.id!=null)draw(f,out[f.id]?'#4f4':'#fc0',`#${f.id} ${out[f.id]||'…'}`);
+ Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
+ const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
+ document.getElementById('l').textContent=ids.map(i=>`#${i}:${got[i]}`).join('  ');setTimeout(loop,80);}
+function draw(f,col,txt){cx.strokeStyle=col;cx.lineWidth=3;cx.beginPath();f.q.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
+ cx.fillStyle=col;cx.font='bold 22px sans-serif';cx.fillText(txt,f.q[0][0],f.q[0][1]-6);}
+let lastOut={};const $=id=>document.getElementById(id);
+for(const k of['url','cls'])$(k).value=localStorage.getItem(k)||'';
+$('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
+ localStorage.setItem('url',url);localStorage.setItem('cls',$('cls').value);
+ const p={cls:$('cls').value,qno:+$('q').value,correct:$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
+ try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
+  $('st').textContent=` 第${p.qno}題已存檔（${r.n}人作答）`;$('q').value=p.qno+1;hist={};got={};}
+ catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
+let lastKey='',lastT=0;
+function livePush(){const url=$('url').value.trim(),cls=$('cls').value;if(!url||!cls)return;const q=+$('q').value,key=q+JSON.stringify(got),now=performance.now();
+ if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
+ fetch(url,{method:'POST',body:JSON.stringify({action:'live',cls,qno:q,results:got})}).catch(()=>{});}
+</script></body></html>
