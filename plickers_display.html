@@ -14,16 +14,19 @@
 <div id="cnt"></div><div id="g"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
+const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
 $('url').value=url;$('cls').value=cls;
 $('gear').onclick=()=>{$('set').style.display=$('set').style.display=='none'?'flex':'none';};
 if(url&&cls)$('set').style.display='none';
 $('url').onchange=$('cls').onchange=()=>{url=$('url').value.trim();cls=$('cls').value;localStorage.setItem('url',url);localStorage.setItem('cls',cls);};
 $('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
-async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+encodeURIComponent(cls))).json(),r=d.results||{},show=$('sa').checked,c={A:0,B:0,C:0,D:0};let n=0;
- for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];el.classList.toggle('on',!!a);el.innerHTML=a&&show?`${i}<small>${a}</small>`:i;if(a){n++;c[a]++;}}
- $('h').textContent=`第 ${d.qno||'-'} 題　已掃到 ${n} / ${N}`;
- $('cnt').style.display=show?'flex':'none';$('cnt').textContent=Object.entries(c).map(([k,v])=>`${k}：${v}`).join('　　');}
+async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+encodeURIComponent(cls))).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
+ for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;c[a]++;}
+  if(!a){el.style.cssText='';el.textContent=i;}
+  else if(!show){el.style.cssText='background:#fff;color:#111';el.textContent=i;}
+  else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=`${i}<small>${a}</small>`;}}
+ $('h').textContent=`第 ${d.qno||'-'} 題　已掃到 ${n} / ${N}`+(d.reveal&&cor?`　正解 ${cor}`:'');
+ $('cnt').style.display=show?'flex':'none';$('cnt').innerHTML=Object.entries(c).map(([k,v])=>`<span style="color:${COL[k]}">${k}：${v}</span>`).join('　　');}
  catch(e){$('h').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
 $('ph').onclick=()=>{url=$('url').value.trim();cls=$('cls').value;if(!url||!cls){alert('請先在設定填入網址與班級');return;}
  const L=new URL('plickers_scanner.html',location.href);L.search='u='+encodeURIComponent(url)+'&c='+encodeURIComponent(cls);
