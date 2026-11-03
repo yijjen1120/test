@@ -5,8 +5,8 @@ canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:
 .b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <button id="go">開啟鏡頭</button><button id="rs">清除</button>
-<div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><input id="cls" placeholder="班級" size="6"> 第<input id="q" type="number" value="1" style="width:52px">題 正解<select id="ans"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<button id="send" style="margin-top:8px">送出本題</button><button id="rv" style="margin-top:8px">公佈答案</button><span id="st"></span>
+<div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><input id="cls" placeholder="班級" size="6"> 第<input id="q" type="number" value="1" style="width:52px">題 正解<select id="ans"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select><br><input id="dt" type="date" style="margin-top:6px"></div>
+<button id="send" style="margin-top:8px">送出本題</button><button id="rv" style="margin-top:8px">公佈答案</button><button id="nx" style="margin-top:8px">下一題</button><span id="st"></span>
 <div class="b"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
 <p id="t">已辨識：0 張</p><div id="g"></div></div></div>
 <script>
@@ -19,7 +19,7 @@ let W,H,hist={},got={},run=false;
 document.getElementById('go').onclick=async()=>{
  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
  vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;loop();};
-document.getElementById('rs').onclick=()=>{hist={};got={};};
+document.getElementById('rs').onclick=()=>{hist={};got={};sent=false;};
 function otsu(g){const h=new Array(256).fill(0);for(let i=0;i<g.length;i+=3)h[g[i]]++;let n=0,s=0;for(let i=0;i<256;i++){n+=h[i];s+=i*h[i];}
  let wb=0,sb=0,best=0,t=100;for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=i*h[i];const d=sb/wb-(s-sb)/wf,v=wb*wf*d*d;if(v>best){best=v;t=i;}}return t;}
 function hull(p){p.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
@@ -50,7 +50,7 @@ function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.n
  const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
   const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
  for(const f of found)if(f.id!=null)draw(f,out[f.id]?'#4f4':'#fc0',`#${f.id} ${out[f.id]||'…'}`);
- Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
+ if(!sent)Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
  const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
  renderGrid();setTimeout(loop,80);}
 function draw(f,col,txt){cx.strokeStyle=col;cx.lineWidth=3;cx.beginPath();f.q.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
@@ -61,15 +61,17 @@ try{for(const k of['url','cls'])$(k).value=localStorage.getItem(k)||'';}catch(e)
  try{localStorage.setItem('url',$('url').value);localStorage.setItem('cls',$('cls').value);}catch(e){}}}
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  try{localStorage.setItem('url',url);localStorage.setItem('cls',$('cls').value);}catch(e){}
- const p={cls:$('cls').value,qno:+$('q').value,correct:$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
+ if(sent){$('st').textContent=' 本題已存檔，請按「下一題」';return;}
+ const p={date:$('dt').value,cls:$('cls').value,qno:+$('q').value,correct:$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
  try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
-  $('st').textContent=` 第${p.qno}題已存檔（${r.n}人作答）`;$('q').value=p.qno+1;hist={};got={};reveal=false;$('rv').textContent='公佈答案';}
+  $('st').textContent=` 第${p.qno}題已存檔（${r.n}人作答），按「下一題」繼續`;sent=true;reveal=true;$('rv').textContent='收起答案';lastT=0;renderGrid();livePush();}
  catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
 let lastKey='',lastT=0;
 function livePush(){const url=$('url').value.trim(),cls=$('cls').value;if(!url||!cls)return;const q=+$('q').value,key=q+$('ans').value+reveal+JSON.stringify(got),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
- fetch(url,{method:'POST',body:JSON.stringify({action:'live',cls,qno:q,results:got,correct:$('ans').value,reveal})}).catch(()=>{});}
-const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'};let reveal=false;
+ fetch(url,{method:'POST',body:JSON.stringify({action:'live',cls,qno:q,date:$('dt').value,results:got,correct:$('ans').value,reveal})}).catch(()=>{});}
+const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'};let reveal=false,sent=false;$('dt').value=new Date().toLocaleDateString('sv-SE');
+$('nx').onclick=()=>{$('q').value=+$('q').value+1;hist={};got={};sent=false;reveal=false;$('rv').textContent='公佈答案';$('st').textContent='';lastT=0;renderGrid();livePush();};
 $('g').innerHTML=Array.from({length:40},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
 function renderGrid(){const cor=$('ans').value;for(let i=1;i<=40;i++){const el=$('g'+i),a=got[i];
