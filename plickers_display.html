@@ -6,12 +6,13 @@
 #g{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:16px}
 .t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(24px,4.5vw,64px);font-weight:700;transition:.3s}
 .t.on{background:#238636;color:#fff}.t small{font-size:.5em}
-#cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:200px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}</style></head><body>
+#cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:200px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}body{min-height:calc(100vh + 220px)}#ch{box-sizing:border-box}</style></head><body>
+<div id="ch"></div>
 <div id="bar"><h1 id="h">等待連線…</h1>
 <label><input type="checkbox" id="sa"> 顯示答案</label><button id="gear">設定</button><button id="ph">手機連結</button>
 <div id="set"><input id="url" placeholder="Apps Script 網址" size="30"><input id="cls" placeholder="班級" size="6"></div></div>
 <div id="lk" style="display:none;padding:12px 16px;background:#161b22;gap:16px;align-items:center"><div id="qr" style="background:#fff;padding:8px"></div><div style="flex:1;word-break:break-all;font-size:13px">用手機掃這個 QR code（或開下面連結）即可，手機會自動記住設定：<br><br><span id="lt"></span></div><button id="lkx" style="font-size:16px;padding:8px 14px">收合</button></div>
-<div id="ch"></div><div id="g"></div>
+<div id="g"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
@@ -25,7 +26,7 @@ async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+enc
   if(!a){el.style.cssText='';el.textContent=i;}
   else if(!show){el.style.cssText='background:#fff;color:#111';el.textContent=i;}
   else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=`${i}<small>${a}</small>`;}}
- $('h').innerHTML=`${cls}　第 ${d.qno||'-'} 題`+(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
+ $('h').innerHTML=`${cls}`+(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
  const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=show?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
  catch(e){$('h').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
@@ -33,5 +34,6 @@ $('ph').onclick=()=>{if($('lk').style.display==='flex'){$('lk').style.display='n
  const L=new URL('plickers_scanner.html',location.href);L.search='u='+encodeURIComponent(url)+'&c='+encodeURIComponent(cls);
  $('lk').style.display='flex';$('lt').textContent=L.href;$('qr').innerHTML='';try{new QRCode($('qr'),{text:L.href,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});}catch(e){}};
 $('lkx').onclick=()=>{$('lk').style.display='none';};
+history.scrollRestoration='manual';addEventListener('load',()=>scrollTo(0,$('ch').offsetHeight));
 poll();
 </script></body></html>
