@@ -2,12 +2,13 @@
 <title>Plickers 掃描器 (階段1)</title>
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
 canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
-.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}</style></head><body>
+.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <button id="go">開啟鏡頭</button><button id="rs">清除</button>
-<div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><input id="cls" placeholder="班級" size="6"> 第<input id="q" type="number" value="1" style="width:52px">題 正解<select id="ans"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select><br><input id="dt" type="date" style="margin-top:6px"></div>
-<button id="send" style="margin-top:8px">送出本題</button><button id="rv" style="margin-top:8px">公佈答案</button><button id="nx" style="margin-top:8px">下一題</button><span id="st"></span>
-<div class="b"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
+<div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><input id="cls" placeholder="班級" size="6"> 第<input id="q" type="number" value="1" style="width:52px">題<input type="hidden" id="ans"></div>
+
+<p style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）</p><div class="b"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
+<div class="act"><button id="rv">公佈答案</button><button id="send">送出本題</button><button id="nx">下一題</button></div><div id="st" style="margin-top:6px;min-height:1.4em"></div>
 <p id="t">已辨識：0 張</p><div id="g"></div></div></div>
 <script>
 const DB={"1":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"2":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"3":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"4":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"5":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"6":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"7":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"8":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"9":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"10":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"11":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"12":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"13":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"14":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"15":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"16":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"17":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"18":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"19":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"20":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"21":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"22":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"23":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"24":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]],"25":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"26":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"27":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"28":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"29":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"30":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"31":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"32":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"33":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"34":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"35":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"36":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"37":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"38":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"39":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"40":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]]};
@@ -62,21 +63,22 @@ try{for(const k of['url','cls'])$(k).value=localStorage.getItem(k)||'';}catch(e)
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  try{localStorage.setItem('url',url);localStorage.setItem('cls',$('cls').value);}catch(e){}
  if(sent){$('st').textContent=' 本題已存檔，請按「下一題」';return;}
- const p={date:$('dt').value,cls:$('cls').value,qno:+$('q').value,correct:$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
+ const p={cls:$('cls').value,qno:+$('q').value,correct:$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
  try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
   $('st').textContent=` 第${p.qno}題已存檔（${r.n}人作答），按「下一題」繼續`;sent=true;reveal=true;$('rv').textContent='收起答案';lastT=0;renderGrid();livePush();}
  catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
 let lastKey='',lastT=0;
 function livePush(){const url=$('url').value.trim(),cls=$('cls').value;if(!url||!cls)return;const q=+$('q').value,key=q+$('ans').value+reveal+JSON.stringify(got),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
- fetch(url,{method:'POST',body:JSON.stringify({action:'live',cls,qno:q,date:$('dt').value,results:got,correct:$('ans').value,reveal})}).catch(()=>{});}
-const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'};let reveal=false,sent=false;$('dt').value=new Date().toLocaleDateString('sv-SE');
+ fetch(url,{method:'POST',body:JSON.stringify({action:'live',cls,qno:q,results:got,correct:$('ans').value,reveal})}).catch(()=>{});}
+const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'};let reveal=false,sent=false;
 $('nx').onclick=()=>{$('q').value=+$('q').value+1;hist={};got={};sent=false;reveal=false;$('rv').textContent='公佈答案';$('st').textContent='';lastT=0;renderGrid();livePush();};
 $('g').innerHTML=Array.from({length:40},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
-function renderGrid(){const cor=$('ans').value;for(let i=1;i<=40;i++){const el=$('g'+i),a=got[i];
+function renderGrid(){const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=40;i++){const el=$('g'+i),a=got[i];
  el.style.background=a?COL[a]:'#222';el.style.color=a?(a==='C'?'#111':'#fff'):'#777';el.style.opacity=a&&reveal&&cor&&a!==cor?.35:1;}}
 $('rv').onclick=()=>{reveal=!reveal;$('rv').textContent=reveal?'收起答案':'公佈答案';lastT=0;renderGrid();livePush();};
 $('ans').onchange=()=>{lastT=0;renderGrid();livePush();};
+for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').value===k?'':k;lastT=0;renderGrid();livePush();};
 renderGrid();
 </script></body></html>
