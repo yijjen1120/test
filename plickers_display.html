@@ -5,7 +5,7 @@
 #bar input{font-size:15px;padding:4px}#set{display:flex;gap:8px;flex-wrap:wrap}h1{margin:0;font-size:28px;flex:1}
 #g{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:16px}
 .t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(24px,4.5vw,64px);font-weight:700;transition:.3s}
-.t.on{background:#238636;color:#fff}.t small{font-size:.5em}
+.t.on{background:#238636;color:#fff}.t{line-height:1.1;text-align:center}.t small{font-size:.38em;font-weight:600}.t small.al{font-size:.45em;font-weight:800}
 #cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:200px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}body{min-height:calc(100vh + 220px)}#ch{box-sizing:border-box}</style></head><body>
 <div id="ch"></div>
 <div id="bar"><h1 id="h">等待連線…</h1>
@@ -21,11 +21,14 @@ $('gear').onclick=()=>{$('set').style.display=$('set').style.display=='none'?'fl
 if(url&&cls)$('set').style.display='none';
 $('url').onchange=$('cls').onchange=()=>{url=$('url').value.trim();cls=$('cls').value;localStorage.setItem('url',url);localStorage.setItem('cls',cls);};
 $('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
-async function poll(){if(url&&cls){try{const d=await(await fetch(url+'?cls='+encodeURIComponent(cls))).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
+let names={},rosterFor='';
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>names[i]?`<small>${esc(names[i])}</small>`:'';
+async function loadRoster(){try{const r=await(await fetch(url+'?cls='+encodeURIComponent(cls)+'&roster=1')).json();names=r.names||{};}catch(e){rosterFor='';}}
+async function poll(){if(url&&cls&&rosterFor!==cls){rosterFor=cls;names={};loadRoster();}if(url&&cls){try{const d=await(await fetch(url+'?cls='+encodeURIComponent(cls))).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
  for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;c[a]++;}
-  if(!a){el.style.cssText='';el.textContent=i;}
-  else if(!show){el.style.cssText='background:#fff;color:#111';el.textContent=i;}
-  else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=`${i}<small>${a}</small>`;}}
+  if(!a){el.style.cssText='';el.innerHTML=i+nm(i);}
+  else if(!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=i+nm(i);}
+  else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=i+nm(i)+`<small class="al">${a}</small>`;}}
  $('h').innerHTML=`${cls}`+(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
  const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=show?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
