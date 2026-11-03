@@ -6,38 +6,39 @@
 #g{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:16px}
 .t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(24px,4.5vw,64px);font-weight:700;transition:.3s}
 .t.on{background:#238636;color:#fff}.t{line-height:1.1;text-align:center}.t small{font-size:.38em;font-weight:600}.t small.al{font-size:.45em;font-weight:800}
-#cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:200px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}body{min-height:calc(100vh + 220px)}#ch{box-sizing:border-box}</style></head><body>
+#cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:200px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}body{min-height:calc(100vh + 220px)}#ch{box-sizing:border-box}#cls{font-size:28px;font-weight:700;background:#0d1117;color:#eee;border:1px solid #30363d;border-radius:8px;padding:2px 8px;max-width:50vw}</style></head><body>
 <div id="ch"></div>
-<div id="bar"><h1 id="h">等待連線…</h1>
-<label><input type="checkbox" id="sa"> 顯示答案</label><button id="gear">設定</button><button id="ph">手機連結</button>
-<div id="set"><input id="url" placeholder="Apps Script 網址" size="30"><input id="cls" placeholder="班級" size="6"></div></div>
+<div id="bar"><h1 id="h"><select id="cls"></select> <span id="hs">等待連線…</span></h1><label><input type="checkbox" id="sa"> 顯示答案</label><button id="ph">手機連結</button><input id="url" type="password" placeholder="Apps Script 網址" size="14" autocomplete="off"></div>
 <div id="lk" style="display:none;padding:12px 16px;background:#161b22;gap:16px;align-items:center"><div id="qr" style="background:#fff;padding:8px"></div><div style="flex:1;word-break:break-all;font-size:13px">用手機掃這個 QR code（或開下面連結）即可，手機會自動記住設定：<br><br><span id="lt"></span></div><button id="lkx" style="font-size:16px;padding:8px 14px">收合</button></div>
 <div id="g"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
-$('url').value=url;$('cls').value=cls;
-$('gear').onclick=()=>{$('set').style.display=$('set').style.display=='none'?'flex':'none';};
-if(url&&cls)$('set').style.display='none';
-$('url').onchange=$('cls').onchange=()=>{url=$('url').value.trim();cls=$('cls').value;localStorage.setItem('url',url);localStorage.setItem('cls',cls);};
+$('url').value=url;
 $('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
-let names={},rosterFor='';
+let names={},rosterFor='',classes=[],clsFor='';
+function fillClasses(list){classes=list;if(cls&&!list.includes(cls))list=[cls].concat(list);
+ $('cls').innerHTML='<option value="">選擇班級</option>'+list.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')+'<option value="__o">輸入其他班級…</option>';$('cls').value=cls;}
+async function loadClasses(){try{fillClasses((await(await fetch(url+'?classes=1')).json()).classes||[]);}catch(e){clsFor='';}}
+$('cls').onchange=()=>{let v=$('cls').value;if(v==='__o')v=(prompt('班級名稱')||'').trim();cls=v;localStorage.setItem('cls',cls);fillClasses(classes);};
+$('url').onchange=()=>{url=$('url').value.trim();localStorage.setItem('url',url);clsFor='';};
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>names[i]?`<small>${esc(names[i])}</small>`:'';
 async function loadRoster(){try{const r=await(await fetch(url+'?cls='+encodeURIComponent(cls)+'&roster=1')).json();names=r.names||{};}catch(e){rosterFor='';}}
 function setCls(){fetch(url,{method:'POST',body:JSON.stringify({action:'setClass',cls})}).catch(()=>{rosterFor='';});}
-async function poll(){if(url&&cls&&rosterFor!==cls){rosterFor=cls;names={};loadRoster();setCls();}if(url&&cls){try{const d=await(await fetch(url+'?live=1')).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
+async function poll(){if(url&&clsFor!==url){clsFor=url;loadClasses();}if(url&&cls&&rosterFor!==cls){rosterFor=cls;names={};loadRoster();setCls();}if(url&&cls){try{const d=await(await fetch(url+'?live=1')).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
  for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;c[a]++;}
   if(!a){el.style.cssText='';el.innerHTML=i+nm(i);}
   else if(!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=i+nm(i);}
   else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=i+nm(i)+`<small class="al">${a}</small>`;}}
- $('h').innerHTML=`${cls}`+(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
+ $('hs').innerHTML=(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
  const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=show?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
- catch(e){$('h').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
+ catch(e){$('hs').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
 $('ph').onclick=()=>{if($('lk').style.display==='flex'){$('lk').style.display='none';return;}url=$('url').value.trim();cls=$('cls').value;if(!url){alert('請先在設定填入網址');return;}
  const L=new URL('plickers_scanner.html',location.href);L.search='u='+encodeURIComponent(url);
  $('lk').style.display='flex';$('lt').textContent=L.href;$('qr').innerHTML='';try{new QRCode($('qr'),{text:L.href,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});}catch(e){}};
 $('lkx').onclick=()=>{$('lk').style.display='none';};
 history.scrollRestoration='manual';addEventListener('load',()=>scrollTo(0,$('ch').offsetHeight));
+fillClasses([]);
 poll();
 </script></body></html>
