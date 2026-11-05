@@ -7,7 +7,7 @@ canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:
 <button id="go">開啟鏡頭</button><button id="rs">清除</button><button id="md">簽到模式</button>
 <div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><span id="cl" style="font-size:15px">目前班級：—</span><input type="hidden" id="ans"></div>
 
-<p id="hint" style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）</p><div class="b" id="bx"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
+<p id="hint" style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）。沒帶卡的學生：點座號格，依序切換 A→B→C→D→未作答</p><div class="b" id="bx"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
 <div class="act"><button id="rv">公布答案<br>不儲存</button><button id="send">公布答案<br>並儲存</button><button id="nx">下一題</button></div><div id="st" style="margin-top:6px;min-height:1.4em"></div>
 <p id="t">已辨識：0 張</p><div id="g"></div></div></div>
 <script>
@@ -84,9 +84,12 @@ $('rv').onclick=()=>{reveal=true;lastT=0;renderGrid();livePush();};
 $('ans').onchange=()=>{lastT=0;renderGrid();livePush();};
 for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').value===k?'':k;lastT=0;renderGrid();livePush();};
 $('md').onclick=()=>{G[mode]=got;mode=mode==='answer'?'sign':'answer';got=G[mode]||{};hist={};sent=false;reveal=false;
- const sg=mode==='sign';$('md').textContent=sg?'回到答題':'簽到模式';for(const id of['hint','bx','rv','nx'])$(id).style.display=sg?'none':'';
+ const sg=mode==='sign';$('md').textContent=sg?'答題模式':'簽到模式';for(const id of['hint','bx','rv','nx'])$(id).style.display=sg?'none':'';
  $('send').innerHTML=sg?'儲存簽到':'公布答案<br>並儲存';$('st').textContent='';lastT=0;renderGrid();livePush();};
-$('g').onclick=e=>{if(mode!=='sign')return;const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];if(got[i])delete got[i];else got[i]='✓';lastT=0;renderGrid();livePush();};
+$('g').onclick=e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];
+ if(mode==='sign'){if(got[i])delete got[i];else got[i]='✓';}
+ else{if(sent){$('st').textContent=' 本題已存檔，無法再修改';return;}const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
+ lastT=0;renderGrid();livePush();};
 function showCls(c){$('cl').textContent='目前班級：'+(c||'尚未設定（請在平板選班級）');}
 async function refreshCls(){const url=$('url').value.trim();if(!url)return;try{showCls((await(await fetch(url+'?info=1')).json()).cls);}catch(e){}}
 setInterval(refreshCls,5000);refreshCls();
