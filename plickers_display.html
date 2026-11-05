@@ -25,13 +25,13 @@ $('url').onchange=()=>{url=$('url').value.trim();localStorage.setItem('url',url)
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>names[i]?`<small>${esc(names[i])}</small>`:'';
 async function loadRoster(){try{const r=await(await fetch(url+'?cls='+encodeURIComponent(cls)+'&roster=1')).json();names=r.names||{};}catch(e){rosterFor='';}}
 function setCls(){fetch(url,{method:'POST',body:JSON.stringify({action:'setClass',cls})}).catch(()=>{rosterFor='';});}
-async function poll(){if(url&&clsFor!==url){clsFor=url;loadClasses();}if(url&&cls&&rosterFor!==cls){rosterFor=cls;names={};loadRoster();setCls();}if(url&&cls){try{const d=await(await fetch(url+'?live=1')).json(),r=d.results||{},show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
- for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;c[a]++;}
+async function poll(){if(url&&clsFor!==url){clsFor=url;loadClasses();}if(url&&cls&&rosterFor!==cls){rosterFor=cls;names={};loadRoster();setCls();}if(url&&cls){try{const d=await(await fetch(url+'?live=1')).json(),r=d.results||{},sign=d.mode==='sign',show=$('sa').checked||!!d.reveal,cor=d.correct,c={A:0,B:0,C:0,D:0};let n=0;
+ for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;if(a in c)c[a]++;}
   if(!a){el.style.cssText='';el.innerHTML=i+nm(i);}
-  else if(!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=i+nm(i);}
+  else if(sign||!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=i+nm(i)+(sign?'<small class="al">已簽到</small>':'');}
   else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=i+nm(i)+`<small class="al">${a}</small>`;}}
- $('hs').innerHTML=(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
- const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=show?'visible':'hidden';
+ $('hs').innerHTML=sign?`　<small style="font-size:.55em;color:#8b949e">簽到中</small>`:(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
+ const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=(show&&!sign)?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
  catch(e){$('hs').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
 $('ph').onclick=()=>{if($('lk').style.display==='flex'){$('lk').style.display='none';return;}url=$('url').value.trim();cls=$('cls').value;if(!url){alert('請先在設定填入網址');return;}
