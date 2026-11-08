@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>地轉風與地面風模擬 v9.1</title>
+    <style>
+        :root { 
+            --sidebar-width: 280px; 
+            --font-main: 15px;
+            --font-title: 1.1rem;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #ececec; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
+        .app-wrapper { display: flex; height: 100vh; width: 100%; overflow: hidden; }
+        
+        .sidebar { 
+            width: var(--sidebar-width); min-width: var(--sidebar-width);
+            background: white; padding: 12px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
+            z-index: 100; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+        }
+        h2 { font-size: var(--font-title); color: #333; margin: 0; text-align: center; font-weight: 900; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        
+        .toolbar { display: flex; flex-direction: column; gap: 6px; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .item { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; cursor: pointer; color: #333; }
+        .legend-icon { width: 30px; height: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        input[type="checkbox"] { transform: scale(1.1); cursor: pointer; }
+
+        .controls { display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .control-group { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: bold; }
+        
+        .radio-group { display: flex; gap: 4px; background: #f0f0f0; padding: 4px; border-radius: 8px; }
+        .radio-group label { flex: 1; text-align: center; cursor: pointer; border-radius: 6px; }
+        .radio-group input { display: none; }
+        
+        .press-group span { display: block; padding: 8px 2px; font-size: 20px; border-radius: 6px; transition: 0.2s; font-weight: 900; }
+        .press-low span { color: #e74c3c !important; }
+        .press-high span { color: #3498db !important; }
+        
+        .normal-group span { display: block; padding: 6px 2px; font-size: 13px; border-radius: 6px; transition: 0.2s; font-weight: normal; }
+        .radio-group input:checked + span { background: #fff3e0 !important; } 
+
+        input[type="range"] { width: 100%; cursor: pointer; height: 25px; }
+        .result-text { font-weight: 900; color: #d35400; background: #fff3e0; padding: 5px 10px; border-radius: 6px; text-align: center; font-size: 16px; }
+
+        .btn-mag { padding: 12px; background: #34495e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 15px; }
+        .btn-mag.active { background: #e67e22; border: 2px solid #d35400; }
+
+        .canvas-viewport { flex: 1; background: #fff; overflow: auto; position: relative; }
+        .scroll-spacer { width: 3600px; height: 3600px; display: flex; align-items: center; justify-content: center; }
+        #zoom-container { width: 1200px; height: 1200px; transform-origin: center center; }
+        canvas { display: block; box-shadow: 0 0 20px rgba(0,0,0,0.1); background: white; cursor: crosshair; }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <div class="sidebar">
+        <h2>地轉風與地面風模擬 v9.1</h2>
+        <button id="toggleMag" class="btn-mag">🔍 放置定點放大鏡</button>
+
+        <div class="toolbar">
+            <label class="item"><input type="checkbox" id="showIsobar" checked><div class="legend-icon"><svg width="25" height="2"><line x1="0" y1="1" x2="25" y2="1" stroke="#aaa" stroke-width="2"/></svg></div>等壓線 Isobar</label>
+            <label class="item"><input type="checkbox" id="showWind" checked><div class="legend-icon"><svg width="25" height="12" viewBox="0 0 30 14"><path d="M2,7 L25,7 M25,7 L18,3 M25,7 L18,11" stroke="#000" stroke-width="3" fill="none"/></svg></div>風向 Wind</label>
+            <label class="item" style="color: #2980b9;"><input type="checkbox" id="showPGF" checked><div class="legend-icon"><svg width="25" height="12" viewBox="0 0 30 14"><path d="M2,7 L25,7 M25,7 L18,3 M25,7 L18,11" stroke="#2980b9" stroke-width="3" fill="none"/></svg></div>氣壓梯度力 PGF</label>
+            <label class="item" style="color: #c0392b;"><input type="checkbox" id="showCF" checked><div class="legend-icon"><svg width="25" height="12" viewBox="0 0 30 14"><path d="M2,7 L25,7 M25,7 L18,3 M25,7 L18,11" stroke="#c0392b" stroke-width="3" fill="none"/></svg></div>科氏力 Fco</label>
+            <label class="item" style="color: #1e824c;"><input type="checkbox" id="showFr" checked><div class="legend-icon"><svg width="25" height="12" viewBox="0 0 30 14"><path d="M2,7 L25,7 M25,7 L18,3 M25,7 L18,11" stroke="#1e824c" stroke-width="3" fill="none"/></svg></div>摩擦力 Fr</label>
+            <label class="item" style="color: #666;"><input type="checkbox" id="showNet" checked><div class="legend-icon"><svg width="25" height="12" viewBox="0 0 30 14"><path d="M2,7 L25,7" stroke="#666" stroke-width="2" stroke-dasharray="3,2"/><path d="M25,7 L19,4 M25,7 L19,10" stroke="#666" stroke-width="2"/></svg></div>科氏力 Fco + 摩擦力 Fr</label>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>氣壓系統：</label>
+                <div class="radio-group press-group">
+                    <label class="press-low"><input type="radio" name="pressure" value="low" checked><span>L</span></label>
+                    <label class="press-high"><input type="radio" name="pressure" value="high"><span>H</span></label>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>地理半球：</label>
+                <div class="radio-group normal-group">
+                    <label><input type="radio" name="hemisphere" value="1" checked><span>北半球</span></label>
+                    <label><input type="radio" name="hemisphere" value="-1"><span>南半球</span></label>
+                </div>
+            </div>
+            <div class="control-group"><label>地面摩擦力強度：</label><input type="range" id="frIntensity" min="0" max="100" value="35"></div>
+            <div id="angleDisplay" class="result-text">θ: 15.7°</div>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin: 2px 0;">
+            
+            <div class="control-group">
+                <label>視野縮放：</label>
+                <input type="range" id="canvasZoom" min="0.5" max="2.0" step="0.1" value="0.8">
+                <div id="zoomDisplay" class="result-text">0.8x</div>
+                <div class="radio-group normal-group" style="margin-top: 4px;">
+                    <label><input type="radio" name="zoomMode" value="center" checked><span>鎖定中心</span></label>
+                    <label><input type="radio" name="zoomMode" value="visual"><span>隨視野</span></label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="canvas-viewport" id="viewport">
+        <div class="scroll-spacer">
+            <div id="zoom-container">
+                <canvas id="windCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('windCanvas');
+    const ctx = canvas.getContext('2d');
+    const viewport = document.getElementById('viewport');
+    const zoomContainer = document.getElementById('zoom-container');
+    const zoomInput = document.getElementById('canvasZoom');
+    
+    const baseSize = 1200, spacerSize = 3600;
+    let magEnabled = false, magX = 600, magY = 600, isDragging = false;
+    const magRadius = 220, magScale = 2.2;
+
+    function initCanvas() {
+        const dpr = window.devicePixelRatio || 2;
+        canvas.width = baseSize * dpr;
+        canvas.height = baseSize * dpr;
+        canvas.style.width = baseSize + 'px';
+        canvas.style.height = baseSize + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        applyZoom(); 
+        draw();
+    }
+
+    function applyZoom() {
+        const newZoom = parseFloat(zoomInput.value);
+        const mode = document.querySelector('input[name="zoomMode"]:checked').value;
+        const curZoom = parseFloat(document.getElementById('zoomDisplay').innerText) || 1.0;
+        let targetX, targetY;
+        if (mode === 'center') { targetX = 600; targetY = 600; }
+        else {
+            targetX = (viewport.scrollLeft + viewport.clientWidth/2 - (spacerSize/2 - (baseSize*curZoom)/2)) / curZoom;
+            targetY = (viewport.scrollTop + viewport.clientHeight/2 - (spacerSize/2 - (baseSize*curZoom)/2)) / curZoom;
+        }
+        zoomContainer.style.transform = `scale(${newZoom})`;
+        document.getElementById('zoomDisplay').innerText = newZoom.toFixed(1) + "x";
+        requestAnimationFrame(() => {
+            viewport.scrollLeft = (spacerSize/2 - (baseSize*newZoom)/2) + (targetX*newZoom) - viewport.clientWidth/2;
+            viewport.scrollTop = (spacerSize/2 - (baseSize*newZoom)/2) + (targetY*newZoom) - viewport.clientHeight/2;
+        });
+    }
+
+    function drawSharpArrow(targetCtx, x, y, u, v, color, isDashed=false, weight=3, isWind=false) {
+        const angle = Math.atan2(v, u), dist = Math.sqrt(u*u + v*v);
+        if (dist < 1) return;
+        
+        targetCtx.save();
+        targetCtx.translate(x, y); targetCtx.rotate(angle);
+        
+        targetCtx.lineJoin = 'miter'; 
+        targetCtx.lineCap = 'butt';
+        
+        const headLen = isWind ? 12 : 10;
+        const headHalfWidth = 6;
+
+        if (isWind) {
+            // 🏆 修復：回歸原本的空心風向箭頭
+            targetCtx.beginPath();
+            targetCtx.setLineDash([]);
+            targetCtx.strokeStyle = '#000';
+            targetCtx.lineWidth = 1.5;
+            targetCtx.fillStyle = '#fff';
+            
+            // 繪製完整的箭頭形狀路徑（包含箭桿與箭頭部）
+            targetCtx.moveTo(0, -2);
+            targetCtx.lineTo(dist - headLen, -2);
+            targetCtx.lineTo(dist - headLen, -headHalfWidth);
+            targetCtx.lineTo(dist, 0);
+            targetCtx.lineTo(dist - headLen, headHalfWidth);
+            targetCtx.lineTo(dist - headLen, 2);
+            targetCtx.lineTo(0, 2);
+            targetCtx.closePath();
+            
+            targetCtx.fill();
+            targetCtx.stroke();
+        } else {
+            // 力學箭頭
+            targetCtx.strokeStyle = color; 
+            targetCtx.lineWidth = weight;
+            if (isDashed) { targetCtx.setLineDash([6, 4]); } else { targetCtx.setLineDash([]); }
+            
+            targetCtx.beginPath();
+            targetCtx.moveTo(0, 0);
+            targetCtx.lineTo(dist - headLen * 0.8, 0);
+            targetCtx.stroke();
+            
+            targetCtx.setLineDash([]);
+            targetCtx.fillStyle = color;
+            targetCtx.beginPath();
+            targetCtx.moveTo(dist, 0);
+            targetCtx.lineTo(dist - headLen, -headHalfWidth);
+            targetCtx.lineTo(dist - headLen, headHalfWidth);
+            targetCtx.closePath();
+            targetCtx.fill();
+        }
+        targetCtx.restore();
+    }
+
+    function renderScene(targetCtx) {
+        const cx = 600, cy = 600;
+        const fDir = parseInt(document.querySelector('input[name="hemisphere"]:checked').value);
+        const pType = document.querySelector('input[name="pressure"]:checked').value;
+        const theta = parseInt(document.getElementById('frIntensity').value) / 100 * 45;
+        const alphaRad = theta * Math.PI / 180;
+
+        if (document.getElementById('showIsobar').checked) {
+            targetCtx.strokeStyle = 'rgba(0,0,0,0.1)'; targetCtx.lineWidth = 2;
+            [120, 240, 360, 480].forEach(r => { targetCtx.beginPath(); targetCtx.arc(cx, cy, r, 0, Math.PI*2); targetCtx.stroke(); });
+        }
+
+        targetCtx.font = "900 80px Arial"; targetCtx.textAlign = "center"; targetCtx.textBaseline = "middle";
+        targetCtx.fillStyle = pType === 'low' ? "#e74c3c" : "#3498db";
+        targetCtx.fillText(pType === 'low' ? "L" : "H", cx, cy);
+
+        const pgfScale = 75, geoWindLen = 95;
+        const pts = [];
+        for (let a=0; a<360; a+=45) pts.push({r:180, angle:(a-90)*Math.PI/180});
+        for (let a=0; a<360; a+=30) pts.push({r:360, angle:a*Math.PI/180});
+
+        pts.forEach((p) => {
+            const cosT = Math.cos(p.angle), sinT = Math.sin(p.angle);
+            const x = cx + p.r * cosT, y = cy + p.r * sinT;
+            let pgfX = (pType === 'low' ? -cosT : cosT), pgfY = (pType === 'low' ? -sinT : sinT);
+            let vgX = -pgfY * fDir, vgY = pgfX * fDir;
+            const windSpeed = geoWindLen * Math.cos(alphaRad);
+            const vx = (vgX*Math.cos(alphaRad) + pgfX*Math.sin(alphaRad)) * windSpeed;
+            const vy = (vgY*Math.cos(alphaRad) + pgfY*Math.sin(alphaRad)) * windSpeed;
+            const cfLen = pgfScale * Math.cos(alphaRad), frLen = pgfScale * Math.sin(alphaRad);
+            let cfX = -vy/windSpeed*fDir*cfLen, cfY = vx/windSpeed*fDir*cfLen;
+            let frX = -vx/windSpeed*frLen, frY = -vy/windSpeed*frLen;
+
+            if (document.getElementById('showPGF').checked) drawSharpArrow(targetCtx, x, y, pgfX*pgfScale, pgfY*pgfScale, '#2980b9', false, 4);
+            if (document.getElementById('showNet').checked) drawSharpArrow(targetCtx, x, y, (cfX+frX), (cfY+frY), '#666', true, 2.5);
+            if (document.getElementById('showCF').checked) drawSharpArrow(targetCtx, x, y, cfX, cfY, '#c0392b', false, 4);
+            if (document.getElementById('showFr').checked) drawSharpArrow(targetCtx, x, y, frX, frY, '#1e824c', false, 4);
+            if (document.getElementById('showWind').checked) drawSharpArrow(targetCtx, x, y, vx, vy, '#000', false, 0, true);
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('angleDisplay').innerText = "θ: " + (parseInt(document.getElementById('frIntensity').value) / 100 * 45).toFixed(1) + "°";
+        renderScene(ctx);
+        if(magEnabled) {
+            ctx.save(); ctx.beginPath(); ctx.arc(magX, magY, magRadius, 0, Math.PI*2); ctx.clip();
+            ctx.fillStyle = "#fff"; ctx.fillRect(magX-magRadius, magY-magRadius, magRadius*2, magRadius*2);
+            ctx.save(); ctx.translate(magX, magY); ctx.scale(magScale, magScale); ctx.translate(-magX, -magY);
+            renderScene(ctx); ctx.restore(); ctx.restore();
+            ctx.beginPath(); ctx.arc(magX, magY, magRadius, 0, Math.PI*2);
+            ctx.strokeStyle = isDragging ? "#e67e22" : "#333"; ctx.lineWidth = 4; ctx.stroke();
+        }
+    }
+
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const currentZoom = parseFloat(zoomInput.value);
+        return { x: (e.clientX - rect.left) / currentZoom, y: (e.clientY - rect.top) / currentZoom };
+    }
+
+    canvas.onmousedown = (e) => {
+        if(!magEnabled) return;
+        const pos = getMousePos(e);
+        if(Math.sqrt((pos.x-magX)**2 + (pos.y-magY)**2) < magRadius) { isDragging = true; e.preventDefault(); }
+    };
+    window.onmousemove = (e) => { if(isDragging) { const pos = getMousePos(e); magX = pos.x; magY = pos.y; draw(); } };
+    window.onmouseup = () => isDragging = false;
+
+    zoomInput.addEventListener('input', applyZoom);
+    document.querySelectorAll('input[name="zoomMode"]').forEach(el => el.onchange = applyZoom);
+    document.getElementById('toggleMag').onclick = function() { magEnabled = !magEnabled; this.classList.toggle('active'); draw(); };
+    document.querySelectorAll('input').forEach(el => {
+        if(el.id !== 'canvasZoom' && el.name !== 'zoomMode') { el.oninput = el.onchange = draw; }
+    });
+
+    window.onload = initCanvas;
+</script>
+</body>
+</html>
