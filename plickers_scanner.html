@@ -1,5 +1,8 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Plickers 掃描器 (階段1)</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#111111"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="答題掃描">
+
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
 canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
 .b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}</style></head><body>
@@ -93,5 +96,6 @@ $('g').onclick=e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[
 function showCls(c){$('cl').textContent='目前班級：'+(c||'尚未設定（請在平板選班級）');}
 async function refreshCls(){const url=$('url').value.trim();if(!url)return;try{showCls((await(await fetch(url+'?info=1')).json()).cls);}catch(e){}}
 setInterval(refreshCls,5000);refreshCls();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 renderGrid();
 </script></body></html>
