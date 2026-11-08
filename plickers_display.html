@@ -13,7 +13,7 @@
 <div id="g"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const COL={A:'#e5484d',B:'#3b82f6',C:'#f5a524',D:'#30a46c'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
+const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
 $('url').value=url;
 $('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
 let names={},rosterFor='',classes=[],clsFor='';
@@ -29,7 +29,7 @@ async function poll(){if(url&&clsFor!==url){clsFor=url;loadClasses();}if(url&&cl
  for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;if(a in c)c[a]++;}
   if(!a){el.style.cssText='';el.innerHTML=nm(i);}
   else if(sign||!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=nm(i)+(sign?'<small class="al">已簽到</small>':'');}
-  else{el.style.cssText=`background:${COL[a]};color:${a==='C'?'#111':'#fff'};`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=nm(i)+`<small class="al">${a}</small>`;}}
+  else{el.style.cssText=`background:${COL[a]};color:#111;`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=nm(i)+`<small class="al">${a}</small>`;}}
  $('hs').innerHTML=sign?`　<small style="font-size:.55em;color:#8b949e">簽到中</small>`:(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
  const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=(show&&!sign)?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
