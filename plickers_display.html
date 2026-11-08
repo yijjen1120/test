@@ -5,9 +5,9 @@
 <style>body{margin:0;font-family:system-ui,sans-serif;background:#0d1117;color:#eee}
 #bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 16px;background:#161b22}
 #bar input{font-size:15px;padding:4px}#set{display:flex;gap:8px;flex-wrap:wrap}h1{margin:0;font-size:28px;flex:1}
-#g{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:16px}
-.t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(24px,4.5vw,64px);font-weight:700;transition:.3s}
-.t.on{background:#238636;color:#fff}.t{line-height:1.1;text-align:center}.t small{font-size:.4em;font-weight:700}.t small.nm{font-size:.62em}.t small.al{font-size:.42em;font-weight:800}.t .sn{font-size:.5em;font-weight:600;opacity:.85}.t .sn.big{font-size:1em;font-weight:700;opacity:1}.t small.nm,.t small.al{word-break:break-all}
+#g{display:grid;grid-template-columns:repeat(10,1fr);gap:10px;padding:16px}
+.t{aspect-ratio:1.3;border-radius:12px;background:#21262d;color:#6e7681;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(18px,3.6vw,56px);font-weight:700;transition:.3s}
+.t.on{background:#238636;color:#fff}.t{line-height:1.1;text-align:center}.t small{font-size:.4em;font-weight:700}.t small.nm{font-size:.56em}.t small.al{font-size:.42em;font-weight:800}.t .sn{font-size:.5em;font-weight:600;opacity:.85}.t .sn.big{font-size:1em;font-weight:700;opacity:1}.t small.nm,.t small.al{word-break:break-all}
 #cnt{display:none;gap:16px;padding:0 16px;font-size:clamp(20px,3vw,40px)}#ch{display:flex;gap:24px;justify-content:center;align-items:flex-end;height:224px;padding:8px 16px}.bc{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:90px}.bc b{font-size:28px}.bc i{width:100%;border-radius:6px 6px 0 0;display:block}.bc span{font-size:28px;font-weight:700}html{scroll-snap-type:y proximity}#ch,#bar{scroll-snap-align:start}body{min-height:calc(100vh + 224px);min-height:calc(100dvh + 224px)}#ch{box-sizing:border-box}#cls{font-size:28px;font-weight:700;background:#0d1117;color:#eee;border:1px solid #30363d;border-radius:8px;padding:2px 8px;max-width:50vw}</style></head><body>
 <div id="ch"></div>
 <div id="bar"><h1 id="h"><select id="cls"></select> <span id="hs">等待連線…</span></h1><label><input type="checkbox" id="sa"> 顯示答案</label><button id="ph">手機連結</button><input id="url" type="password" placeholder="Apps Script 網址" size="14" autocomplete="off"></div>
@@ -15,7 +15,7 @@
 <div id="g"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'},N=40,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
+const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'},N=50,$=id=>document.getElementById(id);let url=localStorage.getItem('url')||'',cls=localStorage.getItem('cls')||'';
 $('url').value=url;
 $('g').innerHTML=Array.from({length:N},(_,i)=>`<div class="t" id="t${i+1}">${i+1}</div>`).join('');
 let names={},rosterFor='',classes=[],clsFor='';
@@ -31,8 +31,9 @@ async function poll(){if(url&&clsFor!==url){clsFor=url;loadClasses();}if(url&&cl
  for(let i=1;i<=N;i++){const el=$('t'+i),a=r[i];if(a){n++;if(a in c)c[a]++;}
   if(!a){el.style.cssText='';el.innerHTML=nm(i);}
   else if(sign||!show){el.style.cssText='background:#fff;color:#111';el.innerHTML=nm(i)+(sign?'<small class="al">已簽到</small>':'');}
-  else{el.style.cssText=`background:${COL[a]};color:#111;`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=nm(i)+`<small class="al">${a}</small>`;}}
- $('hs').innerHTML=sign?`　<small style="font-size:.55em;color:#8b949e">簽到中</small>`:(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${N}</small>`;
+  else{el.style.cssText=`background:${COL[a]};color:#111;`+(d.reveal&&cor&&a!==cor?'opacity:.3':'');el.innerHTML=nm(i)+`<small class="al">${a}</small>`;}
+  el.style.visibility=(Object.keys(names).length&&!names[i]&&!a)?'hidden':'';}
+ $('hs').innerHTML=sign?`　<small style="font-size:.55em;color:#8b949e">簽到中</small>`:(d.reveal&&cor?`　正解 <span style="color:${COL[cor]}">${cor}</span>`:'')+`　<small style="font-size:.55em;color:#8b949e">已掃到 ${n} / ${Object.keys(names).length||N}</small>`;
  const mx=Math.max(1,...Object.values(c));$('ch').style.visibility=(show&&!sign)?'visible':'hidden';
  $('ch').innerHTML=Object.entries(c).map(([k,v])=>`<div class="bc"><b>${v}</b><i style="height:${Math.max(4,v/mx*130)}px;background:${COL[k]};${d.reveal&&cor&&k!==cor?'opacity:.3':''}"></i><span style="color:${COL[k]}">${k}</span></div>`).join('');}
  catch(e){$('hs').textContent='連線失敗，重試中…';}}setTimeout(poll,2000);}
