@@ -23,7 +23,7 @@ let W,H,hist={},got={},run=false;
 document.getElementById('go').onclick=async()=>{if(run){vid.srcObject.getTracks().forEach(t=>t.stop());run=false;cx.clearRect(0,0,W,H);document.getElementById('go').textContent='開啟鏡頭';return;}
  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
  vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;loop();document.getElementById('go').textContent='關閉鏡頭';};
-document.getElementById('rs').onclick=()=>{hist={};got={};sent=false;};
+document.getElementById('rs').onclick=()=>{hist={};got={};sent=false;qid=newQid();};
 function otsu(g){const h=new Array(256).fill(0);for(let i=0;i<g.length;i+=3)h[g[i]]++;let n=0,s=0;for(let i=0;i<256;i++){n+=h[i];s+=i*h[i];}
  let wb=0,sb=0,best=0,t=100;for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=i*h[i];const d=sb/wb-(s-sb)/wf,v=wb*wf*d*d;if(v>best){best=v;t=i;}}return t;}
 function hull(p){p.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
@@ -65,19 +65,18 @@ try{for(const k of['url'])$(k).value=localStorage.getItem(k)||'';}catch(e){}
  try{localStorage.setItem('url',$('url').value);}catch(e){}}}
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  try{localStorage.setItem('url',url);}catch(e){}
- if(sent&&mode==='answer'){$('st').textContent=' 本題已存檔，請按「下一題」';return;}
- const p={mode,correct:mode==='sign'?'':$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
+ const p={mode,qid,correct:mode==='sign'?'':$('ans').value,total:40,results:{...lastOut}};$('st').textContent=' 送出中…';
  try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
   if(r.error==='noclass'){$('st').textContent=' 請先在平板選擇班級';return;}
   if(mode==='sign'){$('st').textContent=` 簽到已儲存（${r.cls}，${r.n}人到）`;return;}
-  $('st').textContent=` 已存檔（${r.cls}，${r.n}人作答），按「下一題」繼續`;sent=true;reveal=true;lastT=0;renderGrid();livePush();}
+  $('st').textContent=`${r.updated?' 已更新並覆蓋上一筆':' 已存檔'}（${r.cls}，${r.n}人作答）。若修改答案，再按一次即可更新`;sent=true;reveal=true;lastT=0;renderGrid();livePush();}
  catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
 let lastKey='',lastT=0;
 function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+JSON.stringify(got),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
  fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,correct:$('ans').value,reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
-const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';const G={};
-$('nx').onclick=()=>{hist={};got={};sent=false;reveal=false;$('st').textContent='';lastT=0;renderGrid();livePush();};
+const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
+$('nx').onclick=()=>{qid=newQid();hist={};got={};sent=false;reveal=false;$('st').textContent='';lastT=0;renderGrid();livePush();};
 $('g').innerHTML=Array.from({length:40},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
 function renderGrid(){const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=40;i++){const el=$('g'+i),a=got[i];
@@ -91,7 +90,7 @@ $('md').onclick=()=>{G[mode]=got;mode=mode==='answer'?'sign':'answer';got=G[mode
  $('send').innerHTML=sg?'儲存簽到':'公布答案<br>並儲存';$('st').textContent='';lastT=0;renderGrid();livePush();};
 $('g').onclick=e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];
  if(mode==='sign'){if(got[i])delete got[i];else got[i]='✓';}
- else{if(sent){$('st').textContent=' 本題已存檔，無法再修改';return;}const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
+ else{if(sent)$('st').textContent=' 答案已修改，請再按一次「公布答案並儲存」更新紀錄';const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
  lastT=0;renderGrid();livePush();};
 function showCls(c){$('cl').textContent='目前班級：'+(c||'尚未設定（請在平板選班級）');}
 async function refreshCls(){const url=$('url').value.trim();if(!url)return;try{showCls((await(await fetch(url+'?info=1')).json()).cls);}catch(e){}}
