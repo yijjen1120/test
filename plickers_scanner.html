@@ -5,7 +5,7 @@
 
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
 canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
-.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}</style></head><body>
+.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-direction:column;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#g small{pointer-events:none;font-size:10px;font-weight:600;line-height:1}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <button id="go">開啟鏡頭</button><button id="rs">清除</button><button id="md">簽到模式</button>
 <div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><span id="cl" style="font-size:15px">目前班級：—</span><input type="hidden" id="ans"></div>
@@ -13,6 +13,7 @@ canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:
 <p id="hint" style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）。沒帶卡的學生：點座號格，依序切換 A→B→C→D→未作答</p><div class="b" id="bx"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
 <div class="act"><button id="rv">公布答案<br>不儲存</button><button id="send">公布答案<br>並儲存</button><button id="nx">下一題</button></div><div id="st" style="margin-top:6px;min-height:1.4em"></div>
 <p id="t">已辨識：0 張</p><div id="g"></div></div></div>
+<div id="dlg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);align-items:center;justify-content:center;z-index:50"><div style="background:#222;padding:18px;border-radius:12px;min-width:250px;text-align:center"><div id="dtt" style="margin-bottom:10px"></div><input id="dk" type="number" inputmode="numeric" min="1" max="63" style="font-size:22px;width:110px;text-align:center"><div id="derr" style="color:#f88;min-height:1.4em;margin:6px 0"></div><button id="dok">確定</button> <button id="dcl">取消備用卡</button> <button id="dno">關閉</button></div></div>
 <script>
 const DB={"1":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"2":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"3":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"4":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"5":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"6":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"7":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"8":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"9":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"10":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"11":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"12":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"13":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"14":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"15":[[1,1,1,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"16":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"17":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"18":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"19":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"20":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"21":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"22":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"23":[[1,1,1,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"24":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]],"25":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"26":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"27":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"28":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"29":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"30":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"31":[[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"32":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"33":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"34":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"35":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"36":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"37":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"38":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"39":[[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]],"40":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]],"41":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"42":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"43":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"44":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"45":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"46":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"47":[[1,1,0,1,1],[1,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"48":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1]],"49":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"50":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],"51":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,1,0,1,1]],"52":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,1],[1,0,1,1,1]],"53":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,0],[1,0,1,1,1]],"54":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,0],[1,1,1,1,1],[1,0,0,1,1]],"55":[[1,1,0,1,1],[0,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,0,0,1,1]],"56":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,1,1,1,1]],"57":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,1,1,1,1]],"58":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,1,0,1,1]],"59":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1]],"60":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,1],[1,0,1,1,1]],"61":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,0],[1,0,1,1,1]],"62":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,1],[1,1,1,1,1],[1,0,0,1,1]],"63":[[1,1,0,1,1],[0,1,1,1,0],[0,1,0,1,0],[1,1,1,1,0],[1,0,0,1,1]]};
 // 160 種版本：key = 畫面上「向上那一邊」的 5x5 圖型；r = 順時鐘轉 r 次，朝上的字母 = TOP[r]
@@ -50,10 +51,10 @@ function detect(){
   const m=MAP[key];res.push({q,id:m?m[0]:null,ans:m?TOP[m[1]]:null});}
  return res;}
 function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.now(),found=detect();
- for(const f of found){if(f.id==null||f.id>50){draw(f,'#f55','?');continue;}(hist[f.id]=hist[f.id]||[]).push([now,f.ans]);}
+ for(const f of found){f.seat=f.id==null?null:(aliasRev[f.id]||f.id);if(f.seat==null||f.seat>48){draw(f,'#f55','?');continue;}(hist[f.seat]=hist[f.seat]||[]).push([now,f.ans]);}
  const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
   const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
- for(const f of found)if(f.id!=null)draw(f,out[f.id]?'#4f4':'#fc0',`#${f.id} ${out[f.id]||'…'}`);
+ for(const f of found)if(f.seat!=null&&f.seat<=48)draw(f,out[f.seat]?'#4f4':'#fc0',`#${f.seat} ${out[f.seat]||'…'}`);
  if(!sent)Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
  const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
  renderGrid();setTimeout(loop,80);}
@@ -65,21 +66,22 @@ try{for(const k of['url'])$(k).value=localStorage.getItem(k)||'';}catch(e){}
  try{localStorage.setItem('url',$('url').value);}catch(e){}}}
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  try{localStorage.setItem('url',url);}catch(e){}
- const p={mode,qid,correct:mode==='sign'?'':$('ans').value,total:50,results:{...lastOut}};$('st').textContent=' 送出中…';
+ const p={mode,qid,correct:mode==='sign'?'':$('ans').value,total:48,results:{...lastOut}};$('st').textContent=' 送出中…';
  try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
   if(r.error==='noclass'){$('st').textContent=' 請先在平板選擇班級';return;}
   if(mode==='sign'){$('st').textContent=` 簽到已儲存（${r.cls}，${r.n}人到）`;return;}
   $('st').textContent=`${r.updated?' 已更新並覆蓋上一筆':' 已存檔'}（${r.cls}，${r.n}人作答）。若修改答案，再按一次即可更新`;sent=true;reveal=true;lastT=0;renderGrid();livePush();}
  catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
 let lastKey='',lastT=0;
-function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+JSON.stringify(got),now=performance.now();
+function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+JSON.stringify(got)+JSON.stringify(alias),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
- fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,correct:$('ans').value,reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
-const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
+ fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,hide:Object.values(alias).map(Number),correct:$('ans').value,reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
+const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';let alias={},aliasRev={},curCls='',lpTime=0,lpT=null,dlgSeat=0;const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
 $('nx').onclick=()=>{qid=newQid();hist={};got={};sent=false;reveal=false;$('st').textContent='';lastT=0;renderGrid();livePush();};
-$('g').innerHTML=Array.from({length:50},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
+$('g').innerHTML=Array.from({length:48},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
-function renderGrid(){const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=50;i++){const el=$('g'+i),a=got[i];
+function renderGrid(){const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=48;i++){const el=$('g'+i),a=got[i];
+ el.style.visibility=aliasRev[i]?'hidden':'';{const h=alias[i]?`${i}<small>備${alias[i]}</small>`:String(i);if(el.dataset.h!==h){el.innerHTML=h;el.dataset.h=h;}}
  if(mode==='sign'){el.style.background=a?'#fff':'#222';el.style.color=a?'#111':'#777';el.style.opacity=1;continue;}
  el.style.background=a?COL[a]:'#222';el.style.color=a?'#111':'#777';el.style.opacity=a&&reveal&&cor&&a!==cor?.35:1;}}
 $('rv').onclick=()=>{reveal=true;lastT=0;renderGrid();livePush();};
@@ -88,11 +90,25 @@ for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').valu
 $('md').onclick=()=>{G[mode]=got;mode=mode==='answer'?'sign':'answer';got=G[mode]||{};hist={};sent=false;reveal=false;
  const sg=mode==='sign';$('md').textContent=sg?'答題模式':'簽到模式';for(const id of['hint','bx','rv','nx'])$(id).style.display=sg?'none':'';
  $('send').innerHTML=sg?'儲存簽到':'公布答案<br>並儲存';$('st').textContent='';lastT=0;renderGrid();livePush();};
-$('g').onclick=e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];
+$('g').onclick=e=>{if(Date.now()-lpTime<900)return;const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];
  if(mode==='sign'){if(got[i])delete got[i];else got[i]='✓';}
  else{if(sent)$('st').textContent=' 答案已修改，請再按一次「公布答案並儲存」更新紀錄';const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
  lastT=0;renderGrid();livePush();};
-function showCls(c){$('cl').textContent='目前班級：'+(c||'尚未設定（請在平板選班級）');}
+function setAlias(S,K){if(K)alias[S]=K;else delete alias[S];aliasRev={};for(const k in alias)aliasRev[alias[k]]=+k;if(K)delete got[K];
+ try{localStorage.setItem('alias',JSON.stringify({cls:curCls,map:alias}));}catch(e){}lastT=0;renderGrid();livePush();}
+function openDlg(S){dlgSeat=S;$('dtt').textContent=`座號 ${S} 使用的備用卡號（1–63）`;$('dk').value=alias[S]||'';$('derr').textContent='';$('dlg').style.display='flex';setTimeout(()=>$('dk').focus(),50);}
+$('g').addEventListener('pointerdown',e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const S=+m[1];clearTimeout(lpT);lpT=setTimeout(()=>{lpTime=Date.now();openDlg(S);},600);});
+for(const ev of['pointerup','pointerleave','pointercancel'])$('g').addEventListener(ev,()=>clearTimeout(lpT));
+$('g').addEventListener('contextmenu',e=>e.preventDefault());
+$('dok').onclick=()=>{const K=parseInt($('dk').value,10),e=$('derr');
+ if(!(K>=1&&K<=63)){e.textContent='請輸入 1～63';return;}
+ if(K===dlgSeat){e.textContent='備用卡號不能和自己的座號相同';return;}
+ for(const k in alias)if(+k!==dlgSeat&&alias[k]===K){e.textContent=`卡 ${K} 已被座號 ${k} 使用`;return;}
+ $('dlg').style.display='none';setAlias(dlgSeat,K);};
+$('dcl').onclick=()=>{$('dlg').style.display='none';setAlias(dlgSeat,0);};
+$('dno').onclick=()=>{$('dlg').style.display='none';};
+function showCls(c){c=c||'';$('cl').textContent='目前班級：'+(c||'尚未設定（請在平板選班級）');
+ if(c!==curCls){curCls=c;let m={};try{const o=JSON.parse(localStorage.getItem('alias')||'{}');if(o.cls===c)m=o.map||{};}catch(e){}alias=m;aliasRev={};for(const k in alias)aliasRev[alias[k]]=+k;renderGrid();}}
 async function refreshCls(){const url=$('url').value.trim();if(!url)return;try{showCls((await(await fetch(url+'?info=1')).json()).cls);}catch(e){}}
 setInterval(refreshCls,5000);refreshCls();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
