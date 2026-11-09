@@ -5,7 +5,7 @@
 
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
 canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
-.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-direction:column;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#g small{pointer-events:none;font-size:10px;font-weight:600;line-height:1}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}#ra{width:150px;margin:0;padding:8px 4px}#ra:disabled{opacity:.35}</style></head><body>
+.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-direction:column;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#g small{pointer-events:none;font-size:10px;font-weight:600;line-height:1}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}#ra{width:150px;margin:0;padding:8px 4px}#ra:disabled{opacity:1;color:#e6e6e6;-webkit-text-fill-color:#e6e6e6;background:#2a2a2a}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <button id="go">開啟鏡頭</button><button id="rs">重新掃描</button><button id="md">簽到模式</button>
 <div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><span id="cl" style="font-size:15px">目前班級：—</span><input type="hidden" id="ans"></div>
@@ -51,10 +51,10 @@ function detect(){
   const m=MAP[key];res.push({q,id:m?m[0]:null,ans:m?TOP[m[1]]:null});}
  return res;}
 function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.now(),found=detect();
- for(const f of found){f.seat=f.id==null?null:(aliasRev[f.id]||f.id);if(f.seat==null||f.seat>48){draw(f,'#f55','?');continue;}(hist[f.seat]=hist[f.seat]||[]).push([now,f.ans]);}
+ for(const f of found){f.seat=f.id==null?null:(aliasRev[f.id]||f.id);if(f.seat==null||f.seat>63){draw(f,'#f55','?');continue;}(hist[f.seat]=hist[f.seat]||[]).push([now,f.ans]);}
  const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
   const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
- for(const f of found)if(f.seat!=null&&f.seat<=48)draw(f,out[f.seat]?'#4f4':'#fc0',`#${f.seat} ${out[f.seat]||'…'}`);
+ for(const f of found)if(f.seat!=null&&f.seat<=63)draw(f,out[f.seat]?'#4f4':'#fc0',`#${f.seat} ${out[f.seat]||'…'}`);
  if(!sent)Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
  const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
  renderGrid();setTimeout(loop,80);}
@@ -78,9 +78,9 @@ function livePush(){const url=$('url').value.trim();if(!url)return;const key=mod
  fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,hide:Object.values(alias).map(Number),correct:$('ans').value,reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
 const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';let alias={},aliasRev={},curCls='',lpTime=0,lpT=null,dlgSeat=0;const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
 $('nx').onclick=()=>{qid=newQid();hist={};got={};sent=false;reveal=false;$('st').textContent='';lastT=0;renderGrid();livePush();};
-$('g').innerHTML=Array.from({length:48},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
+$('g').innerHTML=Array.from({length:63},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
-function renderGrid(){updRa();const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=48;i++){const el=$('g'+i),a=got[i];
+function renderGrid(){updRa();const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=63;i++){const el=$('g'+i),a=got[i];
  el.style.visibility=aliasRev[i]?'hidden':'';{const h=alias[i]?`${i}<small>備${alias[i]}</small>`:String(i);if(el.dataset.h!==h){el.innerHTML=h;el.dataset.h=h;}}
  if(mode==='sign'){el.style.background=a?'#fff':'#222';el.style.color=a?'#111':'#777';el.style.opacity=1;continue;}
  el.style.background=a?COL[a]:'#222';el.style.color=a?'#111':'#777';el.style.opacity=a&&reveal&&cor&&a!==cor?.35:1;}}
@@ -100,7 +100,7 @@ $('ra').onclick=()=>{const b=$('ra');if(!Object.keys(alias).length)return;
  if(!raT){b.textContent='再按一次確認';raT=setTimeout(()=>{raT=null;updRa();},3000);return;}
  clearTimeout(raT);raT=null;alias={};aliasRev={};
  try{localStorage.setItem('alias',JSON.stringify({cls:curCls,map:{}}));}catch(e){}lastT=0;renderGrid();livePush();};
-function setAlias(S,K){if(K)alias[S]=K;else delete alias[S];aliasRev={};for(const k in alias)aliasRev[alias[k]]=+k;if(K)delete got[K];
+function setAlias(S,K){if(K)alias[S]=K;else delete alias[S];aliasRev={};for(const k in alias)aliasRev[alias[k]]=+k;if(K){for(const o of [got,...Object.values(G)]){if(o[K]!==undefined){o[S]=o[K];delete o[K];}}if(hist[K]){hist[S]=(hist[S]||[]).concat(hist[K]);delete hist[K];}}
  try{localStorage.setItem('alias',JSON.stringify({cls:curCls,map:alias}));}catch(e){}lastT=0;renderGrid();livePush();}
 function openDlg(S){dlgSeat=S;$('dtt').textContent=`座號 ${S} 使用的備用卡號（1–63）`;$('dk').value=alias[S]||'';$('derr').textContent='';$('dlg').style.display='flex';setTimeout(()=>$('dk').focus(),50);}
 $('g').addEventListener('pointerdown',e=>{const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const S=+m[1];clearTimeout(lpT);lpT=setTimeout(()=>{lpTime=Date.now();openDlg(S);},600);});
