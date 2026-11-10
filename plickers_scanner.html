@@ -5,7 +5,7 @@
 
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#111;color:#eee}#w{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
 canvas{max-width:100%;background:#000;border-radius:8px}#p{min-width:230px;flex:1}button{font-size:16px;padding:8px 14px;margin:0 6px 8px 0}
-.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-direction:column;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#g small{pointer-events:none;font-size:10px;font-weight:600;line-height:1}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}#ra{width:150px;margin:0;padding:8px 4px}#ra:disabled{opacity:1;color:#e6e6e6;-webkit-text-fill-color:#e6e6e6;-webkit-appearance:none;appearance:none;background:#1a1a1a;border:1px solid #3a3a3a;border-radius:6px;box-shadow:none}</style></head><body>
+.b{display:flex;gap:8px}.b div{flex:1;background:#222;border-radius:8px;padding:8px;text-align:center}.b b{font-size:28px;display:block}#l{font-family:monospace;line-height:1.6;margin-top:8px}#g{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px}#g div{aspect-ratio:1.2;border-radius:6px;background:#222;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-direction:column;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}#g small{pointer-events:none;font-size:10px;font-weight:600;line-height:1}.act{display:flex;gap:8px;margin-top:10px}.act button{flex:1;margin:0;padding:12px 4px}.b div{cursor:pointer}#ra{width:150px;margin:0;padding:8px 4px}#rs{width:112px;text-align:center}#ra:disabled{opacity:1;color:#e6e6e6;-webkit-text-fill-color:#e6e6e6;-webkit-appearance:none;appearance:none;background:#0c0c0c;border:1px solid #2a2a2a;border-top:2px solid #000;border-radius:6px;box-shadow:inset 0 4px 8px #000,inset 0 -1px 0 rgba(255,255,255,.07)}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <button id="go">開啟鏡頭</button><button id="rs">清除作答</button><button id="md">簽到模式</button>
 <div><input id="url" placeholder="貼上 Apps Script 網址" style="width:100%;box-sizing:border-box"><br><span id="cl" style="font-size:15px">目前班級：—</span><input type="hidden" id="ans"></div>
@@ -21,10 +21,10 @@ const DB={"1":[[1,1,1,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,1,1,1]],"2":
 const TOP=['B','A','D','C'],MAP={};
 for(const id in DB){let g=DB[id];for(let r=0;r<4;r++){MAP[g.map(x=>x.join('')).join('')]=[+id,r];g=g[0].map((_,c)=>g.map(row=>row[c]).reverse());}}
 const cv=document.getElementById('c'),cx=cv.getContext('2d',{willReadFrequently:true}),vid=document.createElement('video');
-let W,H,hist={},got={},run=false;
+let W,H,hist={},got={},run=false,lastNew=0;
 document.getElementById('go').onclick=async()=>{if(run){vid.srcObject.getTracks().forEach(t=>t.stop());run=false;cx.clearRect(0,0,W,H);document.getElementById('go').textContent='開啟鏡頭';return;}
  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
- vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;loop();document.getElementById('go').textContent='關閉鏡頭';};
+ vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;lastNew=performance.now();loop();document.getElementById('go').textContent='關閉鏡頭';};
 let rsT=null;document.getElementById('rs').onclick=()=>{const b=document.getElementById('rs');
  if(!rsT){b.textContent='再按一次確認';rsT=setTimeout(()=>{rsT=null;b.textContent='清除作答';},3000);return;}
  clearTimeout(rsT);rsT=null;b.textContent='清除作答';
@@ -54,12 +54,14 @@ function detect(){
   const mn=Math.min(...v),mx=Math.max(...v);if(mx-mn<50)continue;const mid=(mn+mx)/2,key=v.map(a=>a<mid?1:0).join('');
   const m=MAP[key];res.push({q,id:m?m[0]:null,ans:m?TOP[m[1]]:null});}
  return res;}
-function loop(){if(!run)return;cx.drawImage(vid,0,0,W,H);const now=performance.now(),found=detect();
+const IDLE_MS=10000;   // 預設：10 秒沒有新訊號就自動關閉鏡頭（可改這個數字，單位毫秒）
+function stopCam(){vid.srcObject.getTracks().forEach(t=>t.stop());run=false;cx.clearRect(0,0,W,H);document.getElementById('go').textContent='開啟鏡頭';document.getElementById('st').textContent=' 超過 10 秒沒有新訊號，已自動關閉鏡頭';}
+function loop(){if(!run)return;if(performance.now()-lastNew>IDLE_MS){stopCam();return;}cx.drawImage(vid,0,0,W,H);const now=performance.now(),found=detect();
  for(const f of found){f.seat=f.id==null?null:(aliasRev[f.id]||f.id);if(f.seat==null||f.seat>63){draw(f,'#f55','?');continue;}(hist[f.seat]=hist[f.seat]||[]).push([now,f.ans]);}
  const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
   const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
  for(const f of found)if(f.seat!=null&&f.seat<=63)draw(f,out[f.seat]?'#4f4':'#fc0',`#${f.seat} ${out[f.seat]||'…'}`);
- if(!sent)Object.assign(got,out);lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
+ if(!sent){for(const k in out)if(got[k]!==out[k])lastNew=now;Object.assign(got,out);}lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
  const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
  renderGrid();setTimeout(loop,80);}
 function draw(f,col,txt){cx.strokeStyle=col;cx.lineWidth=3;cx.beginPath();f.q.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
@@ -94,7 +96,7 @@ $('rv').onclick=()=>{reveal=true;lastT=0;renderGrid();livePush();};
 $('ans').onchange=()=>{lastT=0;renderGrid();livePush();};
 for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').value===k?'':k;lastT=0;renderGrid();livePush();};
 const TIP_A='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動依序切換答案。',TIP_S='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動切換簽到／未簽到。';$('tip').textContent=TIP_A;
-$('md').onclick=()=>{G[mode]=got;mode=mode==='answer'?'sign':'answer';got=G[mode]||{};if(mode==='sign'){for(const k in G.answer)if(G.answer[k]&&!got[k])got[k]='✓';}hist={};sent=false;reveal=false;
+$('md').onclick=()=>{G[mode]=got;mode=mode==='answer'?'sign':'answer';got=G[mode]||{};if(mode==='sign'){for(const k in G.answer)if(G.answer[k]&&!got[k])got[k]=G.answer[k];}else{for(const k in G.sign){const v=G.sign[k];if(/^[ABCD]$/.test(v)&&!got[k])got[k]=v;}}hist={};sent=false;reveal=false;
  const sg=mode==='sign';$('md').textContent=sg?'答題模式':'簽到模式';for(const id of['hint','bx','rv','nx'])$(id).style.display=sg?'none':'';
  $('send').innerHTML=sg?'儲存簽到':'公布答案<br>並儲存';$('tip').textContent=sg?TIP_S:TIP_A;$('st').textContent='';lastT=0;renderGrid();livePush();};
 $('g').onclick=e=>{if(Date.now()-lpTime<900)return;const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];if(aliasRev[i])return;
