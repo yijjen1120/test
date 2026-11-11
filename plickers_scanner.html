@@ -11,15 +11,16 @@ button:active:not(:disabled){background:linear-gradient(#6a6a6a,#5b5b5b);color:#
 .sw{position:relative;display:inline-block;width:51px;height:31px}.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;z-index:2;cursor:pointer}
 .sl{position:absolute;inset:0;background:#d1d1d6;border-radius:8px;transition:.25s}.sl:before{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;background:#fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.35);transition:.25s}
 .sw input:checked+.sl{background:#34c759}.sw input:checked+.sl:before{transform:translateX(20px)}
-html{scroll-snap-type:y proximity}#p,#w>div:first-child{scroll-snap-align:start}#w>div:first-child{width:100%}#c{width:100%;height:auto;display:block}</style></head><body>
+html{scroll-snap-type:y proximity}#p,#w>div:first-child{scroll-snap-align:start}#w>div:first-child{width:100%}#c{width:100%;height:auto;display:block}.act>button,#sw2 button{font-size:15px;white-space:nowrap}.act button.on{background:linear-gradient(#6a6a6a,#5b5b5b);color:#eee;border-color:#444;box-shadow:inset 0 2px 6px rgba(0,0,0,.65);text-shadow:none}#g{margin-bottom:8px}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <div id="top"><div class="tg"><span>模式：</span><div id="seg"><span id="mA" class="on">答題</span><span id="mS">簽到</span></div><input type="checkbox" id="md" hidden></div><label class="tg"><span>鏡頭</span><span class="sw"><input type="checkbox" id="go"><span class="sl"></span></span></label></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span id="cl" style="font-size:15px">目前班級：—</span><input id="url" placeholder="貼上網址" style="width:52%;min-width:0;box-sizing:border-box;font-size:14px"><input type="hidden" id="ans"></div>
 
-<p id="hint" style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）。</p><div class="b" id="bx"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
-<div class="act"><button id="rv">公布答案<br>不儲存</button><div id="sw2"><button id="send">公布答案<br>並儲存</button><button id="sc" style="display:none">清空</button></div><button id="nx">清空</button></div><div id="st" style="margin-top:6px;min-height:1.4em"></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 0"><span id="t">已辨識：0 張</span><button id="ra">重置備用卡</button></div><div id="tip" style="font-size:13px;color:#8b949e;line-height:1.55;margin:6px 0;white-space:pre-line"></div>
-<div id="g"></div></div></div>
+<div id="g"></div>
+<p id="hint" style="margin:6px 0 2px;font-size:13px;color:#8b949e">點下方 A/B/C/D 設定正解（再點一次取消）。</p><div class="b" id="bx"><div>A<b id="nA">0</b></div><div>B<b id="nB">0</b></div><div>C<b id="nC">0</b></div><div>D<b id="nD">0</b></div></div>
+<div class="act"><button id="sa">顯示作答</button><button id="rv">公布正解</button><div id="sw2"><button id="send">儲存</button><button id="sc" style="display:none">清空</button></div><button id="nx">清空</button></div><div id="st" style="margin-top:6px;min-height:1.4em"></div>
+</div></div>
 <div id="sp"></div>
 <div id="dlg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);align-items:center;justify-content:center;z-index:50"><div style="background:#222;padding:18px;border-radius:12px;min-width:250px;text-align:center"><div id="dtt" style="margin-bottom:10px"></div><input id="dk" type="number" inputmode="numeric" min="1" max="63" style="font-size:22px;width:110px;text-align:center"><div id="derr" style="color:#f88;min-height:1.4em;margin:6px 0"></div><button id="dcl">清除備用卡</button> <button id="dok">確定</button></div></div>
 <script>
@@ -31,8 +32,9 @@ const cv=document.getElementById('c'),cx=cv.getContext('2d',{willReadFrequently:
 let W,H,hist={},got={},run=false,lastNew=0;
 document.getElementById('go').onchange=async()=>{const sw=document.getElementById('go');
  if(!sw.checked){stopCam();return;}
+ scrollTo({top:0,behavior:'smooth'});
  try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
-  vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;lastNew=performance.now();loop();scrollTo({top:0,behavior:'smooth'});}
+  vid.srcObject=s;vid.playsInline=true;await vid.play();const k=Math.min(1,960/vid.videoWidth);W=cv.width=Math.round(vid.videoWidth*k);H=cv.height=Math.round(vid.videoHeight*k);run=true;lastNew=performance.now();loop();}
  catch(e){sw.checked=false;document.getElementById('st').textContent=' 無法開啟鏡頭，請確認瀏覽器已允許使用鏡頭';}};
 function otsu(g){const h=new Array(256).fill(0);for(let i=0;i<g.length;i+=3)h[g[i]]++;let n=0,s=0;for(let i=0;i<256;i++){n+=h[i];s+=i*h[i];}
  let wb=0,sb=0,best=0,t=100;for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=i*h[i];const d=sb/wb-(s-sb)/wf,v=wb*wf*d*d;if(v>best){best=v;t=i;}}return t;}
@@ -66,7 +68,7 @@ function loop(){if(!run)return;if(performance.now()-lastNew>IDLE_MS){stopCam();r
  const out={};for(const id in hist){hist[id]=hist[id].filter(e=>now-e[0]<1500).slice(-8);if(!hist[id].length){delete hist[id];continue;}
   const c={};hist[id].forEach(e=>c[e[1]]=(c[e[1]]||0)+1);const [a,n]=Object.entries(c).sort((x,y)=>y[1]-x[1])[0];if(n>=3)out[id]=a;}
  for(const f of found)if(f.seat!=null&&f.seat<=63)draw(f,out[f.seat]?'#4f4':'#fc0',`#${f.seat} ${out[f.seat]||'…'}`);
- if(!sent){for(const k in out)if(got[k]!==out[k])lastNew=now;Object.assign(got,out);}lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
+ if(!(sent||reveal)){for(const k in out)if(got[k]!==out[k])lastNew=now;Object.assign(got,out);}lastOut=got;livePush();const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)document.getElementById('n'+k).textContent=cnt[k];
  const ids=Object.keys(got).sort((a,b)=>a-b);document.getElementById('t').textContent=`已辨識：${ids.length} 張`;
  renderGrid();setTimeout(loop,80);}
 function draw(f,col,txt){cx.strokeStyle=col;cx.lineWidth=3;cx.beginPath();f.q.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
@@ -81,38 +83,39 @@ $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').tex
  try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
   if(r.error==='noclass'){$('st').textContent=' 請先在平板選擇班級';return;}
   if(mode==='sign'){$('st').textContent=` 簽到已儲存（${r.cls}，${r.n}人到）`;return;}
-  $('st').textContent=`${r.updated?' 已更新並覆蓋上一筆':' 已存檔'}（${r.cls}，${r.n}人作答）。若修改答案，再按一次即可更新`;sent=true;reveal=true;lastT=0;renderGrid();livePush();}
+  $('st').textContent=`${r.updated?' 已更新並覆蓋上一筆':' 已存檔'}（${r.cls}，${r.n}人作答）。若修改答案，再按一次「儲存」即可更新`;sent=true;lastT=0;renderGrid();livePush();}
  catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
 let lastKey='',lastT=0;
-function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+JSON.stringify(got)+JSON.stringify(alias),now=performance.now();
+function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+showAns+JSON.stringify(got)+JSON.stringify(alias),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
- fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,hide:Object.values(alias).map(Number),correct:$('ans').value,reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
-const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,sent=false,mode='answer';let alias={},aliasRev={},curCls='',lpTime=0,lpT=null,dlgSeat=0;const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
+ fetch(url,{method:'POST',body:JSON.stringify({action:'live',mode,results:got,hide:Object.values(alias).map(Number),correct:reveal?$('ans').value:'',reveal:showAns||reveal})}).then(r=>r.json()).then(r=>showCls(r.cls)).catch(()=>{});}
+const COL={A:'#ef6b73',B:'#6aa5ff',C:'#f6b94c',D:'#4fc08d'};let reveal=false,showAns=false,sent=false,mode='answer';let alias={},aliasRev={},curCls='',lpTime=0,lpT=null,dlgSeat=0;const G={};const newQid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);let qid=newQid();
 $('nx').onclick=clearAll;
 $('g').innerHTML=Array.from({length:63},(_,i)=>`<div id="g${i+1}">${i+1}</div>`).join('');
 for(const k in COL)$('n'+k).parentNode.style.borderTop='4px solid '+COL[k];
 const XBG='linear-gradient(to top right,transparent calc(50% - 2px),#9aa4b2 calc(50% - 2px),#9aa4b2 calc(50% + 2px),transparent calc(50% + 2px)),linear-gradient(to bottom right,transparent calc(50% - 2px),#9aa4b2 calc(50% - 2px),#9aa4b2 calc(50% + 2px),transparent calc(50% + 2px))';
 function stats(){const cnt={A:0,B:0,C:0,D:0};for(const id in got)if(got[id] in cnt)cnt[got[id]]++;for(const k in cnt)$('n'+k).textContent=cnt[k];$('t').textContent=`已辨識：${Object.keys(got).length} 張`;}
-function renderGrid(){updRa();stats();const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=63;i++){const el=$('g'+i),a=got[i];
+function renderGrid(){updRa();stats();$('rv').classList.toggle('on',reveal);$('sa').classList.toggle('on',showAns);const cor=$('ans').value;for(const k in COL)$('n'+k).parentNode.style.outline=cor===k?'3px solid #fff':'none';for(let i=1;i<=63;i++){const el=$('g'+i),a=got[i];
  el.style.visibility='';{const h=alias[i]?`${i}<small>備${alias[i]}</small>`:String(i);if(el.dataset.h!==h){el.innerHTML=h;el.dataset.h=h;}}
  if(aliasRev[i]){el.style.background='#222';el.style.backgroundImage=XBG;el.style.color='#777';el.style.opacity=1;continue;}
  if(mode==='sign'){el.style.background=a?'#fff':'#222';el.style.color=a?'#111':'#777';el.style.opacity=1;continue;}
  el.style.background=a?COL[a]:'#222';el.style.color=a?'#111':'#777';el.style.opacity=a&&reveal&&cor&&a!==cor?.35:1;}}
-$('rv').onclick=()=>{reveal=true;lastT=0;renderGrid();livePush();};
+$('rv').onclick=()=>{if(!$('ans').value){$('st').textContent=' 請先點選 A/B/C/D 方塊設定正解';return;}reveal=true;lastT=0;renderGrid();livePush();};
+$('sa').onclick=()=>{showAns=!showAns;lastT=0;renderGrid();livePush();};
 $('ans').onchange=()=>{lastT=0;renderGrid();livePush();};
 for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').value===k?'':k;lastT=0;renderGrid();livePush();};
 const TIP_A='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動依序切換答案。',TIP_S='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動切換簽到／未簽到。';$('tip').textContent=TIP_A;
-$('md').onchange=()=>{const old=mode,y0=scrollY;G[old]=got;mode=$('md').checked?'sign':'answer';if(mode===old)return;got=G[mode]||{};if(mode==='sign'){for(const k in G.answer)if(G.answer[k]&&!got[k])got[k]=G.answer[k];}else{for(const k in G.sign){const v=G.sign[k];if(/^[ABCD]$/.test(v)&&!got[k])got[k]=v;}}hist={};sent=false;reveal=false;
- const sg=mode==='sign';$('mA').classList.toggle('on',!sg);$('mS').classList.toggle('on',sg);for(const id of['hint','bx'])$(id).style.visibility=sg?'hidden':'';for(const id of['rv','nx'])$(id).style.display=sg?'none':'';$('sc').style.display=sg?'':'none';
- $('send').innerHTML=sg?'儲存':'公布答案<br>並儲存';$('tip').textContent=sg?TIP_S:TIP_A;$('st').textContent='';lastT=0;renderGrid();livePush();fixSp();scrollTo(0,y0);};
+$('md').onchange=()=>{const old=mode,y0=scrollY;G[old]=got;mode=$('md').checked?'sign':'answer';if(mode===old)return;got=G[mode]||{};if(mode==='sign'){for(const k in G.answer)if(G.answer[k]&&!got[k])got[k]=G.answer[k];}else{for(const k in G.sign){const v=G.sign[k];if(/^[ABCD]$/.test(v)&&!got[k])got[k]=v;}}hist={};sent=false;reveal=false;showAns=false;
+ const sg=mode==='sign';$('mA').classList.toggle('on',!sg);$('mS').classList.toggle('on',sg);for(const id of['hint','bx'])$(id).style.visibility=sg?'hidden':'';for(const id of['sa','rv','nx'])$(id).style.display=sg?'none':'';$('sc').style.display=sg?'':'none';
+ $('send').textContent='儲存';$('tip').textContent=sg?TIP_S:TIP_A;$('st').textContent='';lastT=0;renderGrid();livePush();fixSp();scrollTo(0,y0);};
 $('g').onclick=e=>{if(Date.now()-lpTime<900)return;const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];if(aliasRev[i])return;
  if(mode==='sign'){if(got[i])delete got[i];else got[i]='✓';}
- else{if(sent)$('st').textContent=' 答案已修改，請再按一次「公布答案並儲存」更新紀錄';const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
+ else{if(sent)$('st').textContent=' 答案已修改，請再按一次「儲存」更新紀錄';const o=['A','B','C','D'],k=o.indexOf(got[i]);if(k<0)got[i]='A';else if(k<3)got[i]=o[k+1];else delete got[i];}
  lastT=0;renderGrid();livePush();};
 $('mA').onclick=()=>{$('md').checked=false;$('md').onchange();};
 $('mS').onclick=()=>{$('md').checked=true;$('md').onchange();};
 $('sc').onclick=clearAll;
-function clearAll(){qid=newQid();$('ans').value='';G.answer={};G.sign={};got=mode==='sign'?G.sign:G.answer;hist={};sent=false;reveal=false;$('st').textContent='';lastT=0;renderGrid();livePush();}
+function clearAll(){qid=newQid();$('ans').value='';G.answer={};G.sign={};got=mode==='sign'?G.sign:G.answer;hist={};sent=false;reveal=false;showAns=false;$('st').textContent='';lastT=0;renderGrid();livePush();}
 function fixSp(){const p=$('p');$('sp').style.height=(p.offsetTop>60?Math.max(0,innerHeight-p.offsetHeight-12):0)+'px';}
 addEventListener('resize',fixSp);setInterval(fixSp,700);fixSp();
 let raT=null;
