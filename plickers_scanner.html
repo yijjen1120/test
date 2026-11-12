@@ -11,7 +11,7 @@ button:active:not(:disabled){background:linear-gradient(#6a6a6a,#5b5b5b);color:#
 .sw{position:relative;display:inline-block;width:51px;height:31px}.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;z-index:2;cursor:pointer}
 .sl{position:absolute;inset:0;background:#d1d1d6;border-radius:8px;transition:.25s}.sl:before{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;background:#fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.35);transition:.25s}
 .sw input:checked+.sl{background:#34c759}.sw input:checked+.sl:before{transform:translateX(20px)}
-html{scroll-snap-type:y proximity}#p,#w>div:first-child{scroll-snap-align:start}#w>div:first-child{width:100%}#c{width:100%;height:auto;display:block}.act>button,#sw2 button{font-size:15px;white-space:nowrap}.act button.on{background:linear-gradient(#6a6a6a,#5b5b5b);color:#eee;border-color:#444;box-shadow:inset 0 2px 6px rgba(0,0,0,.65);text-shadow:none}#g{margin-bottom:8px}</style></head><body>
+html{scroll-snap-type:y proximity}#p,#w>div:first-child{scroll-snap-align:start}#w>div:first-child{width:100%}#c{width:100%;height:auto;display:block}.act>button,#sw2 button{font-size:15px;white-space:nowrap}.act button.on{background:linear-gradient(#6a6a6a,#5b5b5b);color:#eee;border-color:#444;box-shadow:inset 0 2px 6px rgba(0,0,0,.65);text-shadow:none}#g{margin-bottom:8px}.b{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.b div{min-width:0;box-sizing:border-box}.act{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.act>button,.act>#sw2{width:100%;min-width:0;box-sizing:border-box}.act.sg #sw2{grid-column:1/-1}</style></head><body>
 <div id="w"><div><canvas id="c"></canvas></div><div id="p">
 <div id="top"><div class="tg"><span>模式：</span><div id="seg"><span id="mA" class="on">答題</span><span id="mS">簽到</span></div><input type="checkbox" id="md" hidden></div><label class="tg"><span>鏡頭</span><span class="sw"><input type="checkbox" id="go"><span class="sl"></span></span></label></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span id="cl" style="font-size:15px">目前班級：—</span><input id="url" placeholder="貼上網址" style="width:52%;min-width:0;box-sizing:border-box;font-size:14px"><input type="hidden" id="ans"></div>
@@ -80,11 +80,15 @@ try{for(const k of['url'])$(k).value=localStorage.getItem(k)||'';}catch(e){}
 $('send').onclick=async()=>{const url=$('url').value.trim();if(!url){$('st').textContent=' 請先貼上網址';return;}
  try{localStorage.setItem('url',url);}catch(e){}
  const p={mode,qid,correct:mode==='sign'?'':$('ans').value,total:48,results:{...lastOut}};$('st').textContent=' 送出中…';
- try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p)})).json();
+ const FAIL=' 送出失敗：請檢查網址與網路後再按一次。';
+ if(navigator.onLine===false){$('st').textContent=FAIL;return;}
+ const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
+ try{const r=await(await fetch(url,{method:'POST',body:JSON.stringify(p),signal:ctl.signal})).json();clearTimeout(tm);
+  if(r.ok===false&&r.error!=='noclass'){$('st').textContent=FAIL;return;}
   if(r.error==='noclass'){$('st').textContent=' 請先在平板選擇班級';return;}
   if(mode==='sign'){$('st').textContent=` 簽到已儲存（${r.cls}，${r.n}人到）`;return;}
   $('st').textContent=`${r.updated?' 已更新並覆蓋上一筆':' 已存檔'}（${r.cls}，${r.n}人作答）。若修改答案，再按一次「儲存」即可更新`;sent=true;lastT=0;renderGrid();livePush();}
- catch(e){$('st').textContent=' 送出失敗：請檢查網址與網路，答案仍保留，可再按一次送出';}};
+ catch(e){clearTimeout(tm);$('st').textContent=FAIL;}};
 let lastKey='',lastT=0;
 function livePush(){const url=$('url').value.trim();if(!url)return;const key=mode+$('ans').value+reveal+showAns+JSON.stringify(got)+JSON.stringify(alias),now=performance.now();
  if(key===lastKey||now-lastT<1500)return;lastKey=key;lastT=now;
@@ -100,13 +104,13 @@ function renderGrid(){updRa();stats();$('rv').classList.toggle('on',reveal);$('s
  if(aliasRev[i]){el.style.background='#222';el.style.backgroundImage=XBG;el.style.color='#777';el.style.opacity=1;continue;}
  if(mode==='sign'){el.style.background=a?'#fff':'#222';el.style.color=a?'#111':'#777';el.style.opacity=1;continue;}
  el.style.background=a?COL[a]:'#222';el.style.color=a?'#111':'#777';el.style.opacity=a&&reveal&&cor&&a!==cor?.35:1;}}
-$('rv').onclick=()=>{if(!$('ans').value){$('st').textContent=' 請先點選 A/B/C/D 方塊設定正解';return;}reveal=true;lastT=0;renderGrid();livePush();};
+$('rv').onclick=()=>{if(reveal){reveal=false;lastT=0;renderGrid();livePush();return;}if(!$('ans').value){$('st').textContent=' 請先點選 A/B/C/D 方塊設定正解';return;}reveal=true;lastT=0;renderGrid();livePush();};
 $('sa').onclick=()=>{showAns=!showAns;lastT=0;renderGrid();livePush();};
 $('ans').onchange=()=>{lastT=0;renderGrid();livePush();};
 for(const k in COL)$('n'+k).parentNode.onclick=()=>{$('ans').value=$('ans').value===k?'':k;lastT=0;renderGrid();livePush();};
 const TIP_A='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動依序切換答案。',TIP_S='針對沒帶卡的學生：\n・長按該生座號→設定備用卡。\n・短按該生座號→手動切換簽到／未簽到。';$('tip').textContent=TIP_A;
 $('md').onchange=()=>{const old=mode,y0=scrollY;G[old]=got;mode=$('md').checked?'sign':'answer';if(mode===old)return;got=G[mode]||{};if(mode==='sign'){for(const k in G.answer)if(G.answer[k]&&!got[k])got[k]=G.answer[k];}else{for(const k in G.sign){const v=G.sign[k];if(/^[ABCD]$/.test(v)&&!got[k])got[k]=v;}}hist={};sent=false;reveal=false;showAns=false;
- const sg=mode==='sign';$('mA').classList.toggle('on',!sg);$('mS').classList.toggle('on',sg);for(const id of['hint','bx'])$(id).style.visibility=sg?'hidden':'';for(const id of['sa','rv','nx'])$(id).style.display=sg?'none':'';$('sc').style.display=sg?'':'none';
+ const sg=mode==='sign';$('mA').classList.toggle('on',!sg);$('mS').classList.toggle('on',sg);for(const id of['hint','bx'])$(id).style.visibility=sg?'hidden':'';for(const id of['sa','rv','nx'])$(id).style.display=sg?'none':'';document.querySelector('.act').classList.toggle('sg',sg);$('sc').style.display=sg?'':'none';
  $('send').textContent='儲存';$('tip').textContent=sg?TIP_S:TIP_A;$('st').textContent='';lastT=0;renderGrid();livePush();fixSp();scrollTo(0,y0);};
 $('g').onclick=e=>{if(Date.now()-lpTime<900)return;const m=/^g(\d+)$/.exec(e.target.id);if(!m)return;const i=+m[1];if(aliasRev[i])return;
  if(mode==='sign'){if(got[i])delete got[i];else got[i]='✓';}
